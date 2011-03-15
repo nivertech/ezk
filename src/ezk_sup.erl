@@ -18,7 +18,7 @@
 %% ===================================================================
 
 start_link() ->
-    Args = ["192,168,1,111",2181, 30000],
+    Args = [["192.168.1.111",2181, 30000]],
     supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
 
 %% ===================================================================
@@ -28,6 +28,6 @@ start_link() ->
 init(Args) ->
     ?LOG(1,"Supervisor: making Childspec."),
     ChildSpec = [?CHILD(ezk_connection,worker,Args)],
-    ?LOG(1,"Supervisor: done Childspec: ~w.",[ChildSpec]),
+     ?LOG(1,"Supervisor: done Childspec: ~w.",[ChildSpec]),
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 

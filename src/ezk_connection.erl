@@ -29,18 +29,26 @@ start_link(Args) ->
 
 
 init([Ip, Port, WantedTimeout]) ->
-    ?LOG(1, "Connection: Server starting"),    
+    ?LOG(1, "Connection: Server starting"),
+    ?LOG(3, "IP: ~w , Port: ~w, Timeout: ~w.",[Ip,Port,WantedTimeout]),    
     {ok, Socket} = gen_tcp:connect(Ip,Port,[binary,{packet,4}]),
+    ?LOG(3, "Connection: Socket open"),    
     HandshakePacket = <<0:64, WantedTimeout:64, 0:64, 16:64, 0:128>>,
+    ?LOG(3, "Connection: Handshake build"),    
+    
     ok = gen_tcp:send(Socket, HandshakePacket),
+    ?LOG(3, "Connection: Handshake send"),    
     ok = inet:setopts(Socket,[{active,once}]),
+    ?LOG(3, "Connection: Channel set to Active"),    
     receive
 	{tcp,Socket,Reply} ->
+            ?LOG(3, "Connection: Handshake Reply there"),    
 	    <<RealTimeout:64, SessionId:64, 16:32, _Hash:128>> = Reply,
 	    InitialState  = #cstate{  
 	      socket = Socket, ip = Ip, 
 	      port = Port, timeout = RealTimeout,
-	      sessionid = SessionId, iteration = 1},        
+	      sessionid = SessionId, iteration = 1},   
+            ?LOG(3, "Connection: Initial state build"),         
 	    ok = inet:setopts(Socket,[{active,once}]),
 	    ?LOG(1, "Connection: Startup complete",[]),
 	    ?LOG(3, "Connection: Initial State : ~w",[InitialState])

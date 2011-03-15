@@ -1,0 +1,12 @@
+{application, ezk,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { ezk_app, []}},
+  {env, []}
+ ]}.

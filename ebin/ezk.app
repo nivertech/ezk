@@ -1,0 +1,9 @@
+{application,ezk,
+             [{description,[]},
+              {vsn,"1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {mod,{ezk_app,[]}},
+              {env,[]},
+              {modules,[ezk_app,ezk_connection,ezk_log,ezk_message_2_packet,
+                        ezk_packet_2_message,ezk_sup,testit]}]}.

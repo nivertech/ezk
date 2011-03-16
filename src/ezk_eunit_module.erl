@@ -1,4 +1,4 @@
--module(ezk_eunit_module).a
+-module(ezk_eunit_module).
 -include_lib("eunit/include/eunit.hrl").
 
 anfangstest_test()->

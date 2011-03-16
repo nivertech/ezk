@@ -9,7 +9,8 @@
  		timeout, 
  		sessionid, 
  		iteration :: pos_integer(),
-                outstanding_heartbeats = 0
+                outstanding_heartbeats = 0,
+                watchtable
  	       }).
 
 -record(zkmsg, {cmd  :: watchevent | ls | create | delete | get | set,

@@ -1,22 +1,34 @@
 -module(ezk_packet_2_message).
--export([get_message_typ/1, replymessage_2_reply/3]).
+-export([get_message_typ/1, replymessage_2_reply/3, get_watch_data/1]).
 -include_lib("../include/ezk.hrl").
 
 
+ 
 get_message_typ(Data) ->
     case Data  of 		
         <<255,255,255,254, Heartbeat/binary>> ->
             {heartbeat, Heartbeat};
 				%%%Watchevents
-	<<4294967295:32, 4294967295:32, 4294967295:32, _Left/binary>> ->
+	<<255,255,255,255, 255,255,255,255, 255,255,255,255 , 0,0,0,0, Payload/binary>> ->
 	    ?LOG(3, "packet_2_message: A Watchevent arrived"),
-	    {watchevent};
+	    {watchevent, Payload};
 						%%%Other Messages
         <<MessId:32, 0:32, Zxid:32, Payload/binary>> ->
 	    ?LOG(3, "packet_2_message: A normal Message arrived"),
             {normal, MessId, Zxid, Payload}
             
     end.
+
+get_watch_data(Binary) ->
+     <<TypInt:32, SyncConnected:32, PackedPath/binary>> = Binary,
+     {Path, _Nothing} = unpack(PackedPath),
+     case TypInt of
+        3 ->
+           Typ = data;
+        4 -> 
+           Typ = child
+     end,   
+     {Typ, binary_to_list(Path), SyncConnected}.
 
 replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
     ?LOG(1,"packet_2_message: Trying to Interpret payload: ~w", [PayloadWithErrorCode]),

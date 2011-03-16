@@ -17,7 +17,11 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--export([create/2, create/3, delete/1, set/2, get/1, ls2/1, ls/1, die/0]).
+%normal functions
+-export([create/2, create/3, delete/1, delete/2, set/2, get/1, ls2/1, ls/1, die/0]).
+%functions with watches
+-export([ls/3, get/3, ls2/3]).
+
 -include_lib("../include/ezk.hrl").
 
 -define(SERVER, ?MODULE). 
@@ -44,10 +48,12 @@ init([Ip, Port, WantedTimeout]) ->
 	{tcp,Socket,Reply} ->
             ?LOG(3, "Connection: Handshake Reply there"),    
 	    <<RealTimeout:64, SessionId:64, 16:32, _Hash:128>> = Reply,
+            Watchtable = ets:new(watchtable, [duplicate_bag, private]),
 	    InitialState  = #cstate{  
 	      socket = Socket, ip = Ip, 
 	      port = Port, timeout = RealTimeout,
-	      sessionid = SessionId, iteration = 1},   
+	      sessionid = SessionId, iteration = 1,
+              watchtable = Watchtable},   
             ?LOG(3, "Connection: Initial state build"),         
 	    ok = inet:setopts(Socket,[{active,once}]),
 	    ?LOG(1, "Connection: Startup complete",[]),
@@ -66,13 +72,17 @@ create(Path, Data, Typ) ->
    gen_server:call(?SERVER, {command, {create, Path, Data, Typ}}).
 
 delete(Path) ->
-   gen_server:call(?SERVER, {command, {delete,  Path}}).
+   gen_server:call(?SERVER, {command, {delete,  Path, []}}).
+
+delete(Path, Typ) ->
+   gen_server:call(?SERVER, {command, {delete, Path, Typ}}).
 
 get(Path) ->
    gen_server:call(?SERVER, {command, {get, Path}}).
 
-%% get(Path, WatchOwner, WatchMessage) ->
-%%    gen_server:cast(?SERVER, {getw, Path, WatchOwner, WatchMessage}).
+get(Path, WatchOwner, WatchMessage) ->
+    gen_server:call(?SERVER, {watchcommand, {get, getw, Path, {data, WatchOwner,
+                                                              WatchMessage}}}).
 
 set(Path, Data) ->
    gen_server:call(?SERVER, {command, {set, Path, Data}}).
@@ -80,14 +90,16 @@ set(Path, Data) ->
 ls(Path) ->
    gen_server:call(?SERVER, {command, {ls, Path}}).
 
-%% ls(Path, WatchOwner, WatchMessage) ->
-%%    gen_server:cast(?SERVER, {lsw, Path ,WatchOwner, WatchMessage}).
-
+ls(Path, WatchOwner, WatchMessage) ->
+    ?LOG(3,"Connection: Send lsw"),
+    gen_server:call(?SERVER, {watchcommand, {ls, lsw,  Path, {child, WatchOwner, 
+							      WatchMessage}}}).
 ls2(Path) ->
    gen_server:call(?SERVER, {command, {ls2, Path}}).
 
-%% ls2(Path, WatchOwner, WatchMessage) ->
-%%    gen_server:cast(?SERVER, {ls2w, Path ,WatchOwner, WatchMessage}).
+ls2(Path, WatchOwner, WatchMessage) ->
+    gen_server:call(?SERVER, {watchcommand, {ls2, ls2w, Path ,{child, WatchOwner, 
+							       WatchMessage}}}).
 
 handle_call({command, Args}, From, State) ->
     Iteration = State#cstate.iteration,
@@ -98,7 +110,28 @@ handle_call({command, Args}, From, State) ->
     ?LOG(3, "Connection: Saved open Request."),
     NewState = State#cstate{iteration = Iteration+1, open_requests = NewOpen },    
     ?LOG(3, "Connection: Returning to wait status"),  
-    {noreply, NewState}.
+    {noreply, NewState};
+
+handle_call({watchcommand, {Command, CommandW, Path, {WType, WO, WM}}}, From, State) ->
+    ?LOG(1," Connection: Got a WatchSetter"),
+    Watchtable = State#cstate.watchtable,
+    AllIn = ets:lookup(Watchtable, {WType,Path}),
+    ?LOG(3," Connection: Searched Table"),
+    true = ets:insert(Watchtable, {{WType, Path}, WO, WM}),
+    ?LOG(3," Connection: Inserted new Entry: ~w",[{{WType, Path}, WO, WM}]),
+    case AllIn of
+	[] -> 
+	    ?LOG(3," Connection: Search got []"),
+	    handle_call({command, {CommandW, Path}}, From, State);
+	_Else -> 
+	    ?LOG(3," Connection: Already Watches set tot this path/typ"),
+	    handle_call({command, {Command, Path}}, From, State)
+    end;
+
+handle_call(Rest, _From, State) ->
+    ?LOG(1,"FOUND : ~w",[Rest]),
+    {noreply, State}.
+
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -115,7 +148,16 @@ handle_info({tcp, _Port, Info}, State) ->
 	    ok = inet:setopts(State#cstate.socket,[{active,once}]),
             {noreply, NewState};
 						%Watchevents
-	{watchevent} -> 
+	{watchevent, Payload} ->
+            ?LOG(1,"Connection: A Watch Event arrived. Halleluja"),
+            {Typ, Path, SyncCon} = ezk_packet_2_message:get_watch_data(Payload), 
+	    Watchtable = State#cstate.watchtable,
+            ?LOG(3,"Connection: Got the data of the watchevent: ~w",[{Typ, Path, SyncCon}]),
+	    Receiver = ets:lookup(Watchtable, {Typ, Path}),
+            ?LOG(3,"Connection: Receivers are: ~w",[Receiver]),
+            ok = send_watch_events_and_erase_receivers(Watchtable, Receiver, Path,
+						       Typ, SyncCon),
+            ?LOG(3,"Connection: Receivers notified"),
 	    ok = inet:setopts(State#cstate.socket,[{active,once}]),
 	    {noreply, State};
 						%Other Messages
@@ -127,7 +169,7 @@ handle_info({tcp, _Port, Info}, State) ->
 	    NewState = State#cstate{open_requests = NewDict},
             ?LOG(3, "Connection: Dictionary updated"),
 	    Reply = ezk_packet_2_message:replymessage_2_reply(CommId, Path,
-							 PayloadWithErrorcode),
+							      PayloadWithErrorcode),
             ?LOG(3, "Connection: determinated reply"),
 	    gen_server:reply(From, Reply),
 	    ok = inet:setopts(State#cstate.socket,[{active,once}]),
@@ -153,3 +195,16 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
+    case Receivers of
+	[] ->
+            ?LOG(1, "Connection: Receiver List completely processed"),
+	    ok;
+	[{Key, WatchOwner, WatchMessage}|T] ->
+            ?LOG(1, "Connection: Send something to ~w", [WatchOwner]),
+            WatchOwner ! {WatchMessage, {Path, Typ, SyncCon}},
+	    ets:delete(Table, {Key, WatchOwner, WatchMessage}),
+	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
+    end.            
+

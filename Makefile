@@ -7,12 +7,16 @@ ZK_DIR=zookeeper-${ZK_VERSION}
 compile:
 
 ## Hudson's continuous integration rule
-ci: clean compile zk_start wasmachen
+ci: clean compile zk_start wasmachen ausmachen
 
 ## compile test release
 
+ausmachen: 
+	${ZK_DIR}/bin/zkServer.sh stop	
+
 wasmachen:
-	erl -noshell -pa /home/marco/temp/ebin -s erl -noshell -s ezk_eunit_module test -s init stop
+	sleep 3
+	erl -noshell -pa ./ebin -s ezk_eunit_module test -s init stop
 
 compile: 
 	./rebar compile
@@ -20,6 +24,7 @@ compile:
 .PHONY: ci test
 
 zk_start: zk_config
+	mkdir ${ZK_DIR}/data
 	${ZK_DIR}/bin/zkServer.sh start
 
 zk_config: ${ZK_DIR}

@@ -12,7 +12,7 @@ ci: clean compile zk_start wasmachen
 ## compile test release
 
 wasmachen:
-	erl -noshell -pa /home/marco/temp/ebin -s testit start -s init stop
+	erl -noshell -pa /home/marco/temp/ebin -s erl -noshell -s ezk_eunit_module test -s init stop
 
 compile: 
 	./rebar compile
@@ -23,7 +23,7 @@ zk_start: zk_config
 	${ZK_DIR}/bin/zkServer.sh start
 
 zk_config: ${ZK_DIR}
-	cp ./zoo ${ZK_DIR}/conf/zoo
+	cp ./zoo.cfg ${ZK_DIR}/conf/zoo.cfg
 
 ${ZK_DIR}: ${ZK_ARCHIVE}
 	tar xzf $<

@@ -1,27 +1,28 @@
-
-ZK_URL=http://zookeeper.apache.org/
-ZK_ARCHIVE=zookeeper.tar.gz
-ZK_DIR=zookeepr
-ZK_JAR=$[ZK_DIR}/zookeeper.jar
+ZK_VERSION=3.3.2
+ZK_URL=http://apache.linux-mirror.org//hadoop/zookeeper/zookeeper-3.3.2/zookeeper-${ZK_VERSION}.tar.gz
+ZK_ARCHIVE=zookeeper-${ZK_VERSION}.tar.gz
+ZK_DIR=zookeeper-${ZK_VERSION}
 
 
 compile:
 
 ## Hudson's continuous integration rule
-ci: clean zookeeper compile test release
+ci: clean compile zk_start wasmachen
+
+## compile test release
+
+wasmachen:
+	erl -noshell -pa /home/marco/temp/ebin -s testit start -s init stop
 
 compile: 
-	./rebar -compile
-
-test:
-	
+	./rebar compile
 
 .PHONY: ci test
 
+zk_start: zk_config
 
-
-${ZK_JAR}: ${ZK_DIR}
-	cd ${ZK_DIR} && ant compile
+zk_config: ${ZK_DIR}
+	cp ./zoo ${ZK_DIR}/conf/zoo
 
 ${ZK_DIR}: ${ZK_ARCHIVE}
 	tar xzf $<
@@ -32,4 +33,4 @@ ${ZK_ARCHIVE}:
 clean:
 	rm -rf ${ZK_DIR}
 
-.PHONY: clean
+.PHONY: clean zk_start zk_config compile

@@ -20,6 +20,7 @@ compile:
 .PHONY: ci test
 
 zk_start: zk_config
+	${ZK_DIR}/bin/zkServer.sh start
 
 zk_config: ${ZK_DIR}
 	cp ./zoo ${ZK_DIR}/conf/zoo

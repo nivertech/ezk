@@ -36,7 +36,7 @@ ${ZK_DIR}: ${ZK_ARCHIVE}
 	tar xzf $<
 
 ${ZK_ARCHIVE}:
-	wget ${ZK_URL}
+	wget ${ZK_URL} -q
 
 clean:
 	rm -rf ${ZK_DIR}

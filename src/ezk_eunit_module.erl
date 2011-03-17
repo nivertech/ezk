@@ -1,10 +1,10 @@
 -module(ezk_eunit_module).
 -include_lib("eunit/include/eunit.hrl").
 
--define(TO_RUN_SINGLE,300).
+-define(TO_RUN_SINGLE,600).
 -define(TO_RUN_MULTI,10000).
 -define(TO_LS_SINGLE,10).
--define(TO_LS_MULTI,100).
+-define(TO_LS_MULTI,1000).
 
 -define(RUN_CYCLES, 2000).
 -define(RUN_CLIENTS, 3000).

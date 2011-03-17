@@ -1,14 +1,14 @@
 -module(ezk_eunit_module).
 -include_lib("eunit/include/eunit.hrl").
 
--define(TO_RUN_SINGLE,600).
--define(TO_RUN_MULTI,10000).
--define(TO_LS_SINGLE,10).
--define(TO_LS_MULTI,1000).
+-define(TO_RUN_SINGLE,600).  %%  
+-define(TO_RUN_MULTI,10000). %%
+-define(TO_LS_SINGLE,10).    %% 900 lses -> 0,4s
+-define(TO_LS_MULTI,1000).   %% 2000 clients, 900 lses --> 173s
 
--define(RUN_CYCLES, 800).
--define(RUN_CLIENTS, 2000).
--define(RUN_SINGLE_ROUNDS, 8000).
+-define(RUN_CYCLES, 100).
+-define(RUN_CLIENTS, 1000).
+-define(RUN_SINGLE_ROUNDS, 2000).
 
 -define(LS_CLIENTS, 2000).
 -define(LS_LSES, 900).

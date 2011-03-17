@@ -14,11 +14,11 @@
 -define(TO_LS_MULTI,300).    %% 2000 clients, 900 lses    -> 173s
 
 -define(RUN_CYCLES       , 50).
--define(RUN_CLIENTS      , 500).
+-define(RUN_CLIENTS      , 300).
 -define(RUN_SINGLE_ROUNDS, 200).
 
--define(LS_CLIENTS, 20).
--define(LS_LSES, 90).
+-define(LS_CLIENTS, 2000).
+-define(LS_LSES, 900).
 
 -export([random_str/1]).
 
@@ -125,17 +125,17 @@ run_s_sequenzed_create(Path, I, List) ->
     %% -----------------------------------------
 ls_performance() ->
     [{"LS: One Single Client 1: (/100)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 100))}}, 
-     {"LS: One Single Client 1: (/50)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 50))}}, 
-     {"LS: One Single Client 1: (/10)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 10))}}, 
-     {"LS: One Single Client 1: (/2)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 2))}}, 
-     {"LS: One Single Client 1: (/1)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES))}}, 
+     {"LS: One Single Client 2: (/50)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 50))}}, 
+     {"LS: One Single Client 3: (/10)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 10))}}, 
+     {"LS: One Single Client 4: (/2)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 2))}}, 
+     {"LS: One Single Client 5: (/1)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES))}}, 
      {"LS: Multiple Clients 1: (/100, /100)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 100),(?LS_LSES div 100)))}},
-     {"LS: Multiple Clients 1: (/50, /50)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 50),(?LS_LSES div 50)))}},
-     {"LS: Multiple Clients 1: (/10, /50)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 10),(?LS_LSES div 50)))}},
-     {"LS: Multiple Clients 1: (/50, /10)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 50),(?LS_LSES div 10)))}},
-     {"LS: Multiple Clients 1: (/10, /10)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 10),(?LS_LSES div 10)))}},
-     {"LS: Multiple Clients 1: (/2, /2)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 2),(?LS_LSES div 2)))}},
-     {"LS: Multiple Clients 1: (/1, /1)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 1),(?LS_LSES div 1)))}}].
+     {"LS: Multiple Clients 2: (/50, /50)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 50),(?LS_LSES div 50)))}},
+     {"LS: Multiple Clients 3: (/10, /50)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 10),(?LS_LSES div 50)))}},
+     {"LS: Multiple Clients 4: (/50, /10)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 50),(?LS_LSES div 10)))}},
+     {"LS: Multiple Clients 5: (/10, /10)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 10),(?LS_LSES div 10)))}},
+     {"LS: Multiple Clients 6: (/2, /2)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 2),(?LS_LSES div 2)))}},
+     {"LS: Multiple Clients 7: (/1, /1)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 1),(?LS_LSES div 1)))}}].
 
 ls_single(Lses)->
     ls_lses(Lses),

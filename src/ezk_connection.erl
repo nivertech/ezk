@@ -18,9 +18,11 @@
 	 terminate/2, code_change/3]).
 
 %normal functions
--export([create/2, create/3, delete/1, delete/2, set/2, get/1, ls2/1, ls/1, die/0]).
+-export([create/2, create/3, delete/1, set/2, get/1, ls2/1, ls/1, die/0]).
 %functions with watches
 -export([ls/3, get/3, ls2/3]).
+%macros
+-export([delete_all/1]).
 
 -include_lib("../include/ezk.hrl").
 
@@ -76,8 +78,8 @@ create(Path, Data, Typ) ->
 delete(Path) ->
    gen_server:call(?SERVER, {command, {delete,  Path, []}}).
 
-delete(Path, Typ) ->
-   gen_server:call(?SERVER, {command, {delete, Path, Typ}}).
+delete_all(Path) ->
+   macro_delete_all_childs(Path).    
 
 %% {ok, {Name, [Data]}} where Name = String
 %% and Data = [{argument, Value}]
@@ -211,5 +213,16 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
             WatchOwner ! {WatchMessage, {Path, Typ, SyncCon}},
 	    ets:delete(Table, {Key, WatchOwner, WatchMessage}),
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
-    end.            
+    end.       
 
+%TODO testing.
+macro_delete_all_childs(Path) ->
+    {ok, Childs} = ls(Path),
+    case Childs of
+        [] ->
+	    ok;
+	ListOfChilds ->
+            lists:map(fun(A) ->
+			      (delete_all(Path++(binary_to_list(A)))) end, ListOfChilds)
+    end,
+    delete(Path).

@@ -6,12 +6,12 @@
 -define(TO_LS_SINGLE,10).
 -define(TO_LS_MULTI,1000).
 
--define(RUN_CYCLES, 2000).
--define(RUN_CLIENTS, 3000).
--define(RUN_SINGLE_ROUNDS, 10000).
+-define(RUN_CYCLES, 800).
+-define(RUN_CLIENTS, 2000).
+-define(RUN_SINGLE_ROUNDS, 8000).
 
--define(LS_CLIENTS, 3000).
--define(LS_LSES, 2000).
+-define(LS_CLIENTS, 2000).
+-define(LS_LSES, 900).
 
 -export([random_str/1]).
 

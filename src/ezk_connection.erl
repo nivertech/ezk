@@ -65,28 +65,33 @@ init([Ip, Port, WantedTimeout]) ->
 die() ->
    erlang:exit(?SERVER, "You stood in my way!").
 
+%% {ok, Path} where Path = String
 create(Path, Data) ->
    gen_server:call(?SERVER, {command, {create, Path, Data, []}}).
 
+%% Typ = e | s | es
 create(Path, Data, Typ) ->
    gen_server:call(?SERVER, {command, {create, Path, Data, Typ}}).
-
+%% {ok, Path}
 delete(Path) ->
    gen_server:call(?SERVER, {command, {delete,  Path, []}}).
 
 delete(Path, Typ) ->
    gen_server:call(?SERVER, {command, {delete, Path, Typ}}).
 
+%% {ok, {Name, [Data]}} where Name = String
+%% and Data = [{argument, Value}]
 get(Path) ->
    gen_server:call(?SERVER, {command, {get, Path}}).
 
 get(Path, WatchOwner, WatchMessage) ->
     gen_server:call(?SERVER, {watchcommand, {get, getw, Path, {data, WatchOwner,
                                                               WatchMessage}}}).
-
+%% {ok, [Data]} with Data like at get
 set(Path, Data) ->
    gen_server:call(?SERVER, {command, {set, Path, Data}}).
 
+%% {ok, [ChildName]} where ChildName = <<"Name">>
 ls(Path) ->
    gen_server:call(?SERVER, {command, {ls, Path}}).
 

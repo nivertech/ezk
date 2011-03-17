@@ -13,8 +13,8 @@
 
 -define(TO_LS_MULTI,300).    %% 2000 clients, 900 lses    -> 173s
 
--define(RUN_CYCLES       , 60).
--define(RUN_CLIENTS      , 1000).
+-define(RUN_CYCLES       , 50).
+-define(RUN_CLIENTS      , 500).
 -define(RUN_SINGLE_ROUNDS, 200).
 
 -define(LS_CLIENTS, 20).

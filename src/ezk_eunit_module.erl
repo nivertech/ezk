@@ -1,17 +1,24 @@
 -module(ezk_eunit_module).
 -include_lib("eunit/include/eunit.hrl").
 
--define(TO_RUN_SINGLE,600).  %% 2000 rounds -> 95s  
--define(TO_RUN_MULTI,10000). %% 
--define(TO_LS_SINGLE,10).    %% 900 lses -> 0,4s
--define(TO_LS_MULTI,300).    %% 2000 clients, 900 lses --> 173s
+-define(TO_RUN_SINGLE,600).  %% 200   rounds              -> 9 ,6s
+                             %% 2000  rounds              -> 95  s  
 
--define(RUN_CYCLES, 50).
--define(RUN_CLIENTS, 200).
--define(RUN_SINGLE_ROUNDS, 2000).
+-define(TO_RUN_MULTI,10000). %% 20   clients, 50   rounds -> 11,6s
+                             %% 100  clients, 25   rounds -> 10  s
+                             %% 200  clients, 50   rounds -> 30  s 
+                             %% 1000 clients, 25   rounds -> 61  s 
 
--define(LS_CLIENTS, 2000).
--define(LS_LSES, 900).
+-define(TO_LS_SINGLE,10).    %% 900  lses                 -> 0,4s
+
+-define(TO_LS_MULTI,300).    %% 2000 clients, 900 lses    -> 173s
+
+-define(RUN_CYCLES       , 60).
+-define(RUN_CLIENTS      , 1000).
+-define(RUN_SINGLE_ROUNDS, 200).
+
+-define(LS_CLIENTS, 20).
+-define(LS_LSES, 90).
 
 -export([random_str/1]).
 
@@ -27,16 +34,26 @@ test_test_() ->
 %% -----------------------------------------
  
 run() ->
-   [{"Single Run", {timeout, ?TO_RUN_SINGLE, ?_assertEqual(ok,run_single())}},
-    {"Multi Run", {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi())}}].
+   [{"Single Run 1 (/100)", {timeout, ?TO_RUN_SINGLE, ?_assertEqual(ok,run_single(?RUN_SINGLE_ROUNDS div 100))}},
+    {"Single Run 2 (/50)",  {timeout, ?TO_RUN_SINGLE, ?_assertEqual(ok,run_single(?RUN_SINGLE_ROUNDS div 50 ))}},
+    {"Single Run 3 (/10)",  {timeout, ?TO_RUN_SINGLE, ?_assertEqual(ok,run_single(?RUN_SINGLE_ROUNDS div 10 ))}},
+    {"Single Run 4 (/2)",   {timeout, ?TO_RUN_SINGLE, ?_assertEqual(ok,run_single(?RUN_SINGLE_ROUNDS div 2  ))}},
+    {"Single Run 5 (/1)",   {timeout, ?TO_RUN_SINGLE, ?_assertEqual(ok,run_single(?RUN_SINGLE_ROUNDS div 1  ))}},
+    {"Multi Run 1 (/100, /100)", {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 100),(?RUN_CYCLES div 100)))}},
+    {"Multi Run 2 (/50, /50)",   {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 50 ),(?RUN_CYCLES div 50 )))}},
+    {"Multi Run 3 (/50, /10)",   {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 50 ),(?RUN_CYCLES div 10 )))}},
+    {"Multi Run 4 (/10, /50)",   {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 10 ),(?RUN_CYCLES div 50 )))}},
+    {"Multi Run 5 (/10, /10)",   {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 10 ),(?RUN_CYCLES div 10 )))}},
+    {"Multi Run 6 (/2, /2)",     {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 2  ),(?RUN_CYCLES div 2  )))}},
+    {"Multi Run 7 (/1, /1)",     {timeout, ?TO_RUN_MULTI, ?_assertEqual(ok,run_multi((?RUN_CLIENTS div 1  ),(?RUN_CYCLES div 1  )))}}].
 
 %% -----------------------------------------
 %% Multi Run
 %% -----------------------------------------
 
-run_multi() ->
+run_multi(Clients, Cycles) ->
     Self = self(),
-    spawn(fun() -> run_multi_startall(?RUN_CLIENTS, Self, ?RUN_CYCLES) end),
+    spawn(fun() -> run_multi_startall(Clients, Self, Cycles) end),
     receive
       papi ->
 	   ok
@@ -63,9 +80,9 @@ run_multi_startall(I, Father, Cycles) ->
 %% Single Run
 %% -----------------------------------------
 
-run_single() ->
+run_single(Rounds) ->
     Ls = ezk_connection:ls("/"),
-    List = run_s_sequenzed_create("/run_single", ?RUN_SINGLE_ROUNDS,[]),
+    List = run_s_sequenzed_create("/run_single", Rounds,[]),
     ?assertEqual(ok, run_s_test_data(List)),
     List2 = run_s_change_data(List,[]),
     ?assertEqual(ok, run_s_test_data( List2)),
@@ -75,7 +92,7 @@ run_single() ->
 
 run_s_change_data([], List2) ->    
     List2;
-run_s_change_data([{Path, Data} | T], List2) ->
+run_s_change_data([{Path, _Data} | T], List2) ->
     Data2 = random_str(1000),
     {C, _I}  = ezk_connection:set(Path, Data2),
     ?assertEqual( ok, C), 
@@ -107,16 +124,26 @@ run_s_sequenzed_create(Path, I, List) ->
     %% LS
     %% -----------------------------------------
 ls_performance() ->
-    [{"LS: One Single Client", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single())}}, 
-     {"LS: Multiple Clients", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi())}}].
+    [{"LS: One Single Client 1: (/100)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 100))}}, 
+     {"LS: One Single Client 1: (/50)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 50))}}, 
+     {"LS: One Single Client 1: (/10)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 10))}}, 
+     {"LS: One Single Client 1: (/2)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES div 2))}}, 
+     {"LS: One Single Client 1: (/1)", {timeout, ?TO_LS_SINGLE, ?_assertEqual(ok, ls_single(?LS_LSES))}}, 
+     {"LS: Multiple Clients 1: (/100, /100)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 100),(?LS_LSES div 100)))}},
+     {"LS: Multiple Clients 1: (/50, /50)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 50),(?LS_LSES div 50)))}},
+     {"LS: Multiple Clients 1: (/10, /50)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 10),(?LS_LSES div 50)))}},
+     {"LS: Multiple Clients 1: (/50, /10)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 50),(?LS_LSES div 10)))}},
+     {"LS: Multiple Clients 1: (/10, /10)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 10),(?LS_LSES div 10)))}},
+     {"LS: Multiple Clients 1: (/2, /2)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 2),(?LS_LSES div 2)))}},
+     {"LS: Multiple Clients 1: (/1, /1)", {timeout, ?TO_LS_MULTI, ?_assertEqual(ok, ls_multi((?LS_CLIENTS div 1),(?LS_LSES div 1)))}}].
 
-ls_single()->
-    ls_lses(?LS_LSES),
+ls_single(Lses)->
+    ls_lses(Lses),
     ok.
 
-ls_multi()->
+ls_multi(Clients,Lses)->
     Self = self(),
-    spawn(fun() -> ls_startall(?LS_CLIENTS, Self, ?LS_LSES) end),
+    spawn(fun() -> ls_startall(Clients, Self, Lses) end),
     receive
       papi ->
 	   ok

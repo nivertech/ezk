@@ -23,6 +23,8 @@
 -export([ls/3, get/3, ls2/3]).
 %macros
 -export([delete_all/1]).
+%infos
+-export([info_get_iterations/0]).
 
 -include_lib("../include/ezk.hrl").
 
@@ -108,6 +110,10 @@ ls2(Path, WatchOwner, WatchMessage) ->
     gen_server:call(?SERVER, {watchcommand, {ls2, ls2w, Path ,{child, WatchOwner, 
 							       WatchMessage}}}).
 
+info_get_iterations() ->
+    gen_server:call(?SERVER, {info, get_iterations}).
+handle_call({info, get_iterations}, _From, State) ->
+    {reply, {ok, State#cstate.iteration}, State};
 handle_call({command, Args}, From, State) ->
     Iteration = State#cstate.iteration,
     {ok, CommId, Path, Packet} = ezk_message_2_packet:make_packet(Args, Iteration),
@@ -196,7 +202,10 @@ handle_info(heartbeat, State) ->
 	    error
     end.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    Watchtable = State#cstate.watchtable,
+    AllWatches = ets:match(Watchtable, '$1'),
+    lists:map(fun({Data, WO, WM}) -> WO ! {watchlost, WM, Data} end, AllWatches),
     ?LOG(1,"Connection: TERMINATING"),
     ok.
 
@@ -215,15 +224,15 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
     end.       
 
-%TODO testing.
+
 macro_delete_all_childs(Path) ->
-    ?LOG(0, "Delete All: Trying to Erase ~s",[Path]),
+    ?LOG(1, "Delete All: Trying to Erase ~s",[Path]),
     {ok, Childs} = ls(Path),
     case Childs of
         [] ->
 	    ok;
 	ListOfChilds ->
-	    ?LOG(0, "Delete All: List of Childs: ~s",[ListOfChilds]),
+	    ?LOG(3, "Delete All: List of Childs: ~s",[ListOfChilds]),
             case Path of
 		"/" ->
 		    lists:map(fun(A) ->
@@ -236,5 +245,5 @@ macro_delete_all_childs(Path) ->
   
 	    end
     end,
-    ?LOG(0, "Killing ~s",[Path]),
+    ?LOG(3, "Killing ~s",[Path]),
     delete(Path).

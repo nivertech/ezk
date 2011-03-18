@@ -55,8 +55,9 @@ run_multi(Clients, Cycles) ->
     Self = self(),
     spawn(fun() -> run_multi_startall(Clients, Self, Cycles) end),
     receive
-      papi ->
-	   ok
+	papi ->
+	    ?debugFmt("Total Iterations in Server: ~w.",[ezk_connection:info_get_iterations()]),
+	    ok
     end.
 
 
@@ -92,6 +93,7 @@ run_single(Rounds) ->
     ?assertEqual(ok, run_s_watchwaiter(List2)),
     ?assertEqual(ok, run_s_delete_list(List2)),
     ?assertEqual(Ls, ezk_connection:ls("/")),
+	    ?debugFmt("Total Iterations in Server: ~w.",[ezk_connection:info_get_iterations()]),
     ok.
 
 run_s_change_data([], List2) ->    
@@ -173,14 +175,16 @@ ls_performance() ->
 
 ls_single(Lses)->
     ls_lses(Lses),
+    ?debugFmt("Total Iterations in Server: ~w.",[ezk_connection:info_get_iterations()]),
     ok.
 
 ls_multi(Clients,Lses)->
     Self = self(),
     spawn(fun() -> ls_startall(Clients, Self, Lses) end),
     receive
-      papi ->
-	   ok
+	papi ->
+	    ?debugFmt("Total Iterations in Server: ~w.",[ezk_connection:info_get_iterations()]),
+	    ok
     end.
 
 ls_startall(0, Father, _Lses) ->

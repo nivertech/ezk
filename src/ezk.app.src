@@ -7,6 +7,6 @@
                   kernel,
                   stdlib
                  ]},
-  {mod, { ezk_app, []}},
+  {mod, { ezk_app, [["127.0.0.1",2181, 30000]]}},
   {env, []}
  ]}.

@@ -5,7 +5,7 @@
 -include_lib("../include/ezk.hrl").
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -17,9 +17,10 @@
 %% API functions
 %% ===================================================================
 
-start_link() ->
-    Args = [["127.0.0.1",2181, 30000]],
-    supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
+start_link(Args) ->
+    %Args = [["127.0.0.1",2181, 30000]],
+    %Args = [["192.168.1.111",2181, 30000]],    
+supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
 
 %% ===================================================================
 %% Supervisor callbacks

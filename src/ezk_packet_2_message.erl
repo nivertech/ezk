@@ -38,9 +38,11 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
             Replydata = interpret_reply_data(CommId, Path, Payload),
 	    Reply = {ok, Replydata};
 	<<255,255,255,146,_Payload/binary>> ->
-	    Reply = {error, "Directory already exists"};
+	    Reply = {error, "Directory already exists!"};
 	<<255,255,255,155,_Payload/binary>> ->
-	    Reply = {error, "Directory not found"};   
+	    Reply = {error, "Directory not found!"};   
+	<<255,255,255,248,_Payload/binary>> ->
+	    Reply = {error, "You are not allowed to do this!"};   
 	Cody -> 
 	    Reply = {unknown, "Wow, you just found an unexpected Error.", Cody}
     end,      

@@ -217,12 +217,24 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 
 %TODO testing.
 macro_delete_all_childs(Path) ->
+    ?LOG(0, "Delete All: Trying to Erase ~s",[Path]),
     {ok, Childs} = ls(Path),
     case Childs of
         [] ->
 	    ok;
 	ListOfChilds ->
-            lists:map(fun(A) ->
-			      (delete_all(Path++(binary_to_list(A)))) end, ListOfChilds)
+	    ?LOG(0, "Delete All: List of Childs: ~s",[ListOfChilds]),
+            case Path of
+		"/" ->
+		    lists:map(fun(A) ->
+				      (delete_all(Path++(binary_to_list(A))))
+			      end, ListOfChilds);
+		_Else  -> 
+		    lists:map(fun(A) ->
+				      (delete_all(Path++"/"++(binary_to_list(A)))) 
+                              end, ListOfChilds)
+  
+	    end
     end,
+    ?LOG(0, "Killing ~s",[Path]),
     delete(Path).

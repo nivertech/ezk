@@ -1,24 +1,24 @@
 -module(ezk_eunit_module).
 -include_lib("eunit/include/eunit.hrl").
 
--define(TO_RUN_SINGLE,600).  %% 200   rounds              -> 9 ,6s
-                             %% 2000  rounds              -> 95  s  
+-define(TO_RUN_SINGLE,400).  %% 100   rounds              -> 8,4  s
+                             %% 1000  rounds              -> 85  s  
 
--define(TO_RUN_MULTI,10000). %% 20   clients, 50   rounds -> 11,6s
-                             %% 100  clients, 25   rounds -> 10  s
-                             %% 200  clients, 50   rounds -> 30  s 
-                             %% 1000 clients, 25   rounds -> 61  s 
+-define(TO_RUN_MULTI,400). %% 20   clients, 50   rounds ->   s
+                             %% 100  clients, 25   rounds ->   s
+                             %% 200  clients, 50   rounds ->   s 
+                             %% 1000 clients, 25   rounds ->   s 
 
 -define(TO_LS_SINGLE,10).    %% 900  lses                 -> 0,4s
 
--define(TO_LS_MULTI,300).    %% 2000 clients, 900 lses    -> 173s
+-define(TO_LS_MULTI,200).    %% 2000 clients, 900 lses    -> 173s
 
--define(RUN_CYCLES       , 40).
--define(RUN_CLIENTS      , 200).
--define(RUN_SINGLE_ROUNDS, 200).
+-define(RUN_CYCLES       , 100).
+-define(RUN_CLIENTS      , 100).
+-define(RUN_SINGLE_ROUNDS, 1000).
 
--define(LS_CLIENTS, 2000).
--define(LS_LSES, 900).
+-define(LS_CLIENTS, 1000).
+-define(LS_LSES, 500).
 
 -export([random_str/1]).
 
@@ -69,7 +69,9 @@ run_multi_startall(I, Father, Cycles) ->
     List = run_s_sequenzed_create("/run_multi",Cycles,[]),
     ?assertEqual(ok, run_s_test_data( List)),
     List2 = run_s_change_data(List,[]),
-    ?assertEqual(ok, run_s_test_data( List2)),
+    ?assertEqual(ok, run_s_test_setwatch_data( List2)),
+    spawn(fun() -> run_s_change_data_and_back(List2) end),
+    ?assertEqual(ok, run_s_watchwaiter(List2)),
     ?assertEqual(ok, run_s_delete_list(List2)),    
     receive
 	papi -> Father ! papi
@@ -85,7 +87,9 @@ run_single(Rounds) ->
     List = run_s_sequenzed_create("/run_single", Rounds,[]),
     ?assertEqual(ok, run_s_test_data(List)),
     List2 = run_s_change_data(List,[]),
-    ?assertEqual(ok, run_s_test_data( List2)),
+    ?assertEqual(ok, run_s_test_setwatch_data( List2)),
+    spawn(fun() -> run_s_change_data_and_back(List2) end),
+    ?assertEqual(ok, run_s_watchwaiter(List2)),
     ?assertEqual(ok, run_s_delete_list(List2)),
     ?assertEqual(Ls, ezk_connection:ls("/")),
     ok.
@@ -104,12 +108,39 @@ run_s_delete_list([{Path, _Data} | T]) ->
     ?assertEqual({ok, Path}, ezk_connection:delete(Path)),
     run_s_delete_list(T).
 
+run_s_change_data_and_back([]) ->
+    ok;
+run_s_change_data_and_back([{Path, Data} | T]) ->
+    Data2 = random_str(1000),
+    {C, _I}  = ezk_connection:set(Path, Data2),
+    ?assertEqual( ok, C), 
+    {C2, _I2}  = ezk_connection:set(Path, Data),
+    ?assertEqual( ok, C2), 
+    run_s_change_data_and_back(T).
+
 run_s_test_data([]) ->
     ok;
 run_s_test_data([{Path, Data} | T]) ->
     {ok, {Got, _I}} = ezk_connection:get(Path),
     ?assertEqual(Data, Got),
     run_s_test_data(T).
+
+run_s_test_setwatch_data([]) ->
+    ok;
+run_s_test_setwatch_data([{Path, Data} | T]) ->
+    Self = self(),
+    {ok, {Got, _I}} = ezk_connection:get(Path, Self, {datawatch, Path}),
+    ?assertEqual(Data, Got),
+    run_s_test_setwatch_data(T).
+
+run_s_watchwaiter([]) ->
+    ok;
+run_s_watchwaiter([{Path, _Data} | T]) ->
+    receive
+       {{datawatch, Path}, _Left} ->
+	    run_s_watchwaiter(T)
+    end.
+
 
     
 run_s_sequenzed_create(_Path, 0, List) -> 
@@ -118,6 +149,9 @@ run_s_sequenzed_create(Path, I, List) ->
     Data = random_str(1000),
     {ok,NewNode} = ezk_connection:create(Path, Data, s),
     run_s_sequenzed_create(Path, I-1, [{NewNode, Data} | List]).
+    
+     
+
 
 
     %% -----------------------------------------

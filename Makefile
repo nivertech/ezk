@@ -17,7 +17,7 @@ zk_stop:
 testen:
 	sleep 3
 	erl -noshell -pa ./ebin \
-            -eval 'eunit:test("ebin",[verbose])'\
+	    -eval 'eunit:test("ebin",[verbose])'\
             -s init stop
 
 compile: 

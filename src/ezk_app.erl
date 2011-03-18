@@ -9,8 +9,8 @@
 %% Application callbacks
 %% ===================================================================
 
-start(_StartType, _StartArgs) ->
-    ezk_sup:start_link().
+start(_StartType, StartArgs) ->
+    ezk_sup:start_link(StartArgs).
 
 stop(_State) ->
     ok.

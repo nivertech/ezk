@@ -4,7 +4,7 @@
 -define(TO_RUN_SINGLE,400).  %% 100   rounds              -> 8,4  s
                              %% 1000  rounds              -> 85  s  
 
--define(TO_RUN_MULTI,400). %% 20   clients, 50   rounds ->   s
+-define(TO_RUN_MULTI,600). %% 20   clients, 50   rounds ->   s
                              %% 100  clients, 25   rounds ->   s
                              %% 200  clients, 50   rounds ->   s 
                              %% 1000 clients, 25   rounds ->   s 

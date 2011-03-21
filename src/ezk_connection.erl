@@ -18,7 +18,8 @@
 	 terminate/2, code_change/3]).
 
 %normal functions
--export([create/2, create/3, delete/1, set/2, get/1, ls2/1, ls/1, die/1]).
+-export([create/2, create/3, create/4, delete/1, set/2, set_acl/2, get/1, get_acl/1,
+	 ls2/1, ls/1, die/1]).
 %functions with watches
 -export([ls/3, get/3, ls2/3]).
 %macros
@@ -50,11 +51,14 @@ die(Reason) ->
 
 %% {ok, Path} where Path = String
 create(Path, Data) ->
-   gen_server:call(?SERVER, {command, {create, Path, Data, []}}).
+   gen_server:call(?SERVER, {command, {create, Path, Data, [], [undef]}}).
 
 %% Typ = e | s | es
 create(Path, Data, Typ) ->
-   gen_server:call(?SERVER, {command, {create, Path, Data, Typ}}).
+   gen_server:call(?SERVER, {command, {create, Path, Data, Typ, [undef]}}).
+
+create(Path, Data, Typ, Acls)  ->
+   gen_server:call(?SERVER, {command, {create, Path, Data, Typ, Acls}}).
 
 delete(Path) ->
    gen_server:call(?SERVER, {command, {delete,  Path, []}}).
@@ -70,9 +74,15 @@ get(Path) ->
 get(Path, WatchOwner, WatchMessage) ->
     gen_server:call(?SERVER, {watchcommand, {get, getw, Path, {data, WatchOwner,
                                                               WatchMessage}}}).
+get_acl(Path) ->
+    gen_server:call(?SERVER, {command, {get_acl, Path}}).
+
 %% {ok, [Data]} with Data like at get
 set(Path, Data) ->
    gen_server:call(?SERVER, {command, {set, Path, Data}}).
+
+set_acl(Path, Acls) ->
+    gen_server:call(?SERVER, {command, {set_acl, Path, Acls}}).
 
 %% {ok, [ChildName]} where ChildName = <<"Name">>
 ls(Path) ->

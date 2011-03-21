@@ -101,7 +101,7 @@ run_s_change_data([], List2) ->
 run_s_change_data([{Path, _Data} | T], List2) ->
     case Path of
 	"/run_multi0000003260" -> ?debugMsg("3: Change data");
-	_Else -> []
+	Else -> []
     end,
     Data2 = random_str(100),
     {C, _I}  = ezk_connection:set(Path, Data2),
@@ -113,17 +113,17 @@ run_s_delete_list([]) ->
 run_s_delete_list([{Path, _Data} | T]) ->
     case Path of
 	"/run_multi0000003260" -> ?debugMsg("7: Delete  node");
-	_Else -> []
+	Else -> []
     end,
     ?assertEqual({ok, Path}, ezk_connection:delete(Path)),
     run_s_delete_list(T).
 
 run_s_change_data([]) ->
     ok;
-run_s_change_data([{Path, _Data} | T]) ->
+run_s_change_data([{Path, Data} | T]) ->
     case Path of
 	"/run_multi0000003260" -> ?debugMsg("5: change data and back");
-	_Else -> []
+	Else -> []
     end,
     Data2 = random_str(100),
     {C, _I}  = ezk_connection:set(Path, Data2),
@@ -135,7 +135,7 @@ run_s_test_data([]) ->
 run_s_test_data([{Path, Data} | T]) ->
     case Path of
 	"/run_multi0000003260" -> ?debugMsg("2: test data");
-	_Else -> []
+	Else -> []
     end,
     {ok, {Got, _I}} = ezk_connection:get(Path),
     ?assertEqual(Data, Got),
@@ -146,7 +146,7 @@ run_s_test_setwatch_data([]) ->
 run_s_test_setwatch_data([{Path, Data} | T]) ->
     case Path of
 	"/run_multi0000003260" -> ?debugMsg("4: test and set watch");
-	_Else -> []
+	Else -> []
     end,
     Self = self(),
     {ok, {Got, _I}} = ezk_connection:get(Path, Self, {datawatch, Path}),
@@ -158,7 +158,7 @@ run_s_watchwaiter([]) ->
 run_s_watchwaiter([{Path, _Data} | T]) ->
     case Path of
 	"/run_multi0000003260" -> ?debugMsg("6: wait watch");
-	_Else -> []
+	Else -> []
     end,
     receive
        {{datawatch, Path}, _Left} ->

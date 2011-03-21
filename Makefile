@@ -15,8 +15,9 @@ zk_stop:
 	${ZK_DIR}/bin/zkServer.sh stop	
 
 testen:
-	sleep 3
-	erl -noshell -pa ./ebin \
+	sleep 3	
+	./rebar eunit -v
+##	erl -noshell -pa ./ebin \
 	    -eval 'eunit:test("ebin",[verbose])'\
             -s init stop
 

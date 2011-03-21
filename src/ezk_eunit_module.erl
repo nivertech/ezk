@@ -70,6 +70,7 @@ run_multi_startall(I, Father, Cycles) ->
     List = run_s_sequenzed_create("/run_multi",Cycles,[]),
     ?assertEqual(ok, run_s_test_data( List)),
     List2 = run_s_change_data(List,[]),
+    erlang:garbage_collect(),
     ?assertEqual(ok, run_s_test_setwatch_data( List2)),
     spawn(fun() -> run_s_change_data(List2) end),
     ?assertEqual(ok, run_s_watchwaiter(List2)),
@@ -228,7 +229,8 @@ ls_startall(I, Father, Lses) ->
 ls_lses(0) ->
     ok;
 ls_lses(I) ->
-    ?assertEqual({ok,_Left}, ezk_connection:ls("/")),
+    {C, _Left} = ezk_connection:ls("/"),
+    ?assertEqual(ok, C),
     ls_lses(I-1).
 
 %%---------------------------------

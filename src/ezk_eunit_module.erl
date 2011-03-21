@@ -99,10 +99,10 @@ run_single(Rounds) ->
 run_s_change_data([], List2) ->    
     List2;
 run_s_change_data([{Path, _Data} | T], List2) ->
-    case Path of
-	"/run_multi0000003260" -> ?debugMsg("3: Change data");
-	_Else -> []
-    end,
+    %% case Path of
+    %% 	"/run_multi0000003260" -> ?debugMsg("3: Change data");
+    %% 	_Else -> []
+    %% end,
     Data2 = random_str(100),
     {C, _I}  = ezk_connection:set(Path, Data2),
     ?assertEqual( ok, C), 
@@ -121,10 +121,10 @@ run_s_delete_list([{Path, _Data} | T]) ->
 run_s_change_data([]) ->
     ok;
 run_s_change_data([{Path, _Data} | T]) ->
-    case Path of
-	"/run_multi0000003260" -> ?debugMsg("5: change data and back");
-	_Else -> []
-    end,
+    %% case Path of
+    %% 	"/run_multi0000003260" -> ?debugMsg("5: change data and back");
+    %% 	_Else -> []
+    %% end,
     Data2 = random_str(100),
     {C, _I}  = ezk_connection:set(Path, Data2),
     ?assertEqual( ok, C), 
@@ -133,10 +133,10 @@ run_s_change_data([{Path, _Data} | T]) ->
 run_s_test_data([]) ->
     ok;
 run_s_test_data([{Path, Data} | T]) ->
-    case Path of
-	"/run_multi0000003260" -> ?debugMsg("2: test data");
-	_Else -> []
-    end,
+    %% case Path of
+    %% 	"/run_multi0000003260" -> ?debugMsg("2: test data");
+    %% 	_Else -> []
+    %% end,
     {ok, {Got, _I}} = ezk_connection:get(Path),
     ?assertEqual(Data, Got),
     run_s_test_data(T).
@@ -144,10 +144,10 @@ run_s_test_data([{Path, Data} | T]) ->
 run_s_test_setwatch_data([]) ->
     ok;
 run_s_test_setwatch_data([{Path, Data} | T]) ->
-    case Path of
-	"/run_multi0000003260" -> ?debugMsg("4: test and set watch");
-	_Else -> []
-    end,
+    %% case Path of
+    %% 	"/run_multi0000003260" -> ?debugMsg("4: test and set watch");
+    %% 	_Else -> []
+    %% end,
     Self = self(),
     {ok, {Got, _I}} = ezk_connection:get(Path, Self, {datawatch, Path}),
     ?assertEqual(Data, Got),
@@ -156,10 +156,10 @@ run_s_test_setwatch_data([{Path, Data} | T]) ->
 run_s_watchwaiter([]) ->
     ok;
 run_s_watchwaiter([{Path, _Data} | T]) ->
-    case Path of
-	"/run_multi0000003260" -> ?debugMsg("6: wait watch");
-	_Else -> []
-    end,
+    %% case Path of
+    %% 	"/run_multi0000003260" -> ?debugMsg("6: wait watch");
+    %% 	_Else -> []
+    %% end,
     receive
        {{datawatch, Path}, _Left} ->
 	    run_s_watchwaiter(T)
@@ -172,10 +172,10 @@ run_s_sequenzed_create(_Path, 0, List) ->
 run_s_sequenzed_create(Path, I, List) ->
     Data = random_str(100),
     {ok,NewNode} = ezk_connection:create(Path, Data, s),
-    case NewNode of
-	"/run_multi0000003260" -> ?debugMsg("1: Made node");
-	Else -> []
-    end,
+    %% case NewNode of
+    %% 	"/run_multi0000003260" -> ?debugMsg("1: Made node");
+    %% 	Else -> []
+    %% end,
     run_s_sequenzed_create(Path, I-1, [{NewNode, Data} | List]).
     
      
@@ -228,7 +228,7 @@ ls_startall(I, Father, Lses) ->
 ls_lses(0) ->
     ok;
 ls_lses(I) ->
-    %%?assertEqual({ok,[<<"zookeeper">>]}, ezk_connection:ls("/")),
+    ?assertEqual({ok,_Left}, ezk_connection:ls("/")),
     ls_lses(I-1).
 
 %%---------------------------------

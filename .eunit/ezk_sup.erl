@@ -25,8 +25,9 @@ supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
 %% ===================================================================
 
 init(Args) ->
-?LOG(0,"args: ~w",[Args]),
+    ?LOG(1,"args: ~w",[Args]),
     ?LOG(1,"Supervisor: making Childspec."),
+%%% The only child is the Connection.
     Connection = ?CHILD(ezk_connection,worker,Args),
     ChildSpec = [Connection],
     ?LOG(1,"Supervisor: done Childspec: ~w.",[ChildSpec]),

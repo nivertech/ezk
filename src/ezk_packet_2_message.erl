@@ -160,7 +160,6 @@ get_n_acls(N, Acls,  Binary) ->
     ?LOG(3,"P2M: Id is: ~w.",[Id]),
     ?LOG(3,"P2M: The Permissiontupel is: ~w.",[{R,W,C,D,A}]),
     Permi = get_perm_from_tupel({R,W,C,D,A}),
-    ?LOG(3,"P2M: Permissions are: ~w.",[Permi]),
     NewAcls = [{Permi, Scheme, Id} | Acls ],    
     get_n_acls(N-1, NewAcls, NowLeft).
 

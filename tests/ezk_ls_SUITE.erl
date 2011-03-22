@@ -12,10 +12,10 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--define(LS_RUNS, 10).
+-define(LS_RUNS, 500).
 
 suite() ->
-    [{timetrap,{seconds,30}}].
+    [{timetrap,{seconds,400}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
@@ -25,10 +25,12 @@ end_per_suite(_Config) ->
     application:stop(ezk),
     ok.
 
-init_per_group(_GroupName, Config) ->
+init_per_group(GroupName, Config) ->
+    io:format("Group starting: ~w", [GroupName]),
     Config.
 
-end_per_group(_GroupName, _Config) ->
+end_per_group(GroupName, _Config) ->
+    io:format("Group finished: ~w", [GroupName]),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -39,23 +41,23 @@ end_per_testcase(_TestCase, _Config) ->
 
 groups() ->
     LsCases = [{ls100,100},
-	      {ls500,500},
-	      {ls1000,100},
-	      {ls5000,500},
-	      {ls10000,100}
-	      ],
-    [{Name, [parallel], [ls_test || _Id <- lists:seq(1,Para)]} 
+    	      {ls200,200},
+    	      {ls500,500},
+    	      {ls700,700},
+    	      {ls900,900}
+    	      ],
+ [{Name, [parallel], [ls_test || _Id <- lists:seq(1,Para)]} 
 	    || {Name, Para} <- LsCases ].
 
 all() -> 
     [{group, N} || {N, _, _} <- groups()].
 
 ls_test(Config) ->
-    ls_test(Config, ?LS_RUNS).
+   ls_test(Config, ?LS_RUNS).
 
 ls_test(_Config, 0) ->
     ok;
 ls_test(Config, N) ->
-    {ok, _Ok} =  ezk_connection:ls("/"),
+    ezk_connection:ls("/"),
     ls_test(Config, N-1).
 

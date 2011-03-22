@@ -46,11 +46,14 @@ make_packet({get_acl, Path}, Iteration) ->
     wrap_packet({Command, Path, Load}, Iteration );    
 
 make_packet({set_acl, Path, Acls}, Iteration) ->
+    ?LOG(3,"m2p: trying to set an acl, starting to build package"),
     AclBin = acls_2_bin(Acls,<<>>,0),
+    ?LOG(3,"m2p: trying to set an acl, AclBin constructed"),
     Load = <<(pack_it_l2b(Path))/binary,
 	      AclBin/binary,
 	      255, 255, 255, 255>>,
     Command = 7, 
+    ?LOG(3,"m2p: trying to set an acl, Load constructed"),
     wrap_packet({Command, Path, Load}, Iteration );
     
 make_packet({ls, Path}, Iteration) ->
@@ -75,7 +78,7 @@ make_packet({ls2w, Path}, Iteration) ->
 
 
 %--------------------------------------------------------------------
-%LIttle Helpers
+%Little Helpers
 %--------------------------------------------------------------------
 pack_it_l2b(List) ->
     Length = length(List),
@@ -90,25 +93,37 @@ wrap_packet({Command, Path, Load}, Iteration) ->
     {ok, Command, Path, Packet}.
 
 acls_2_bin([], AclBin, Int) ->
+    ?LOG(3,"m2p: Acl finished"),
     <<Int:32, AclBin/binary>>;
 
 acls_2_bin([undef], _AclBin, Int) ->
+    ?LOG(3,"m2p: undef Acl build"),
     NewAclBin = <<31:32,
 	       (pack_it_l2b("world"))/binary, 
 	       (pack_it_l2b("anyone"))/binary>>,
     acls_2_bin([], NewAclBin, Int+1);
 
 acls_2_bin([{Scheme, Id, Permi}| Left], AclBin, Int) ->
-    NewAclBin = <<(get_permi_int(Permi, 0))/binary,
-		  (pack_it_l2b(Scheme))/binary,
-		  (pack_it_l2b(Id))/binary,
+    ?LOG(3,"m2p: one more element for acl build"),
+    ?LOG(3,"m2p: ACL : ~w",[{Scheme, Id, Permi}]),
+    PermiInt = get_permi_int(Permi,0),
+    ?LOG(3,"m2p: PermiInt : ~w",[PermiInt]),
+    SchemeBin = pack_it_l2b(Scheme),
+    ?LOG(3,"m2p: SchemeBin : ~w",[SchemeBin]),
+    IdBin     = pack_it_l2b(Id),
+    ?LOG(3,"m2p: IdBin : ~w",[IdBin]),
+    NewAclBin = <<PermiInt:32,
+		  SchemeBin/binary,
+		  IdBin/binary,
 		  AclBin/binary>>,
     acls_2_bin(Left, NewAclBin, Int+1).
     
 
 get_permi_int([], PermiInt) ->
+    ?LOG(3,"All rights processed"),
     PermiInt;
 get_permi_int([H | T], PermiInt) ->
+    ?LOG(3,"Right ~w in process",[H]),
     case H of 
 	r ->   CommandBit = 1;
 	w ->   CommandBit = 2;

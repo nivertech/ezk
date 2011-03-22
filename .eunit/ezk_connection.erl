@@ -319,7 +319,6 @@ establish_connection(Ip, Port, WantedTimeout) ->
     ?LOG(3, "Connection: Socket open"),    
     HandshakePacket = <<0:64, WantedTimeout:64, 0:64, 16:64, 0:128>>,
     ?LOG(3, "Connection: Handshake build"),    
-
     ok = gen_tcp:send(Socket, HandshakePacket),
     ?LOG(3, "Connection: Handshake send"),    
     ok = inet:setopts(Socket,[{active,once}]),

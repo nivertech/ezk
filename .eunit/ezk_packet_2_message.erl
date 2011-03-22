@@ -34,7 +34,8 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
     ?LOG(1,"packet_2_message: Trying to Interpret payload: ~w", [PayloadWithErrorCode]),
     case PayloadWithErrorCode of
 	<<0,0,0,0,Payload/binary>> -> 
-	    ?LOG(1, "packet_2_message: Interpreting the payload"),
+	    ?LOG(1, "packet_2_message: Interpreting the payload with commid ~w and Path ~w"
+		 , [CommId, Path]),
             Replydata = interpret_reply_data(CommId, Path, Payload),
 	    Reply = {ok, Replydata};
 	<<255,255,255,146,_Payload/binary>> ->
@@ -62,8 +63,11 @@ interpret_reply_data(2, Path, _Reply) ->
 
 %%% get
 interpret_reply_data(4, _Path, Reply) -> 
+    ?LOG(3,"P2M: Got a get reply"),
     <<LengthOfData:32, Data/binary>> = Reply,
+    ?LOG(3,"P2M: Length of data is ~w",[LengthOfData]),
     {ReplyData, Left} = split_binary(Data, LengthOfData),
+    ?LOG(3,"P2M: The Parameterdata is ~w",[Left]),    
     Parameter = getbinary_2_list(Left),
     {binary_to_list(ReplyData), Parameter};
 
@@ -83,8 +87,8 @@ interpret_reply_data(6, _Path, Reply) ->
     {Acls, Parameter};
 
 %%% set_acl
-interpret_reply_data(7, Path, _Reply) ->
-    Path;
+interpret_reply_data(7, _Path, Reply) ->
+    getbinary_2_list(Reply);
 
 
 %%% ls
@@ -119,16 +123,18 @@ get_n_paths(N, Binary) ->
 
 
 getbinary_2_list(Binary) ->
+    ?LOG(3,"p2m: Trying to match Parameterdata"),
     <<0:32,              Czxid:32,        0:32,         Mzxid:32,
       Ctime:64,                           Mtime:64,
-      DaVer:32,          CVer:32,         0:96,  
+      DaVer:32,          CVer:32,         AclVer:32,    0:64,  
                          DaLe:32,         NumChi:32,    0:32,
       Pzxid:32>> = Binary,
+    ?LOG(3,"p2m: Matching Parameterdata Successfull"),
     [{czxid, Czxid}, {mzxid, Mzxid},
             {ctime, Ctime}, {mtime, Mtime},
             {dataversion, DaVer}, {datalength, DaLe},
             {numberChildren,NumChi}, {pzxid, Pzxid},
-            {cversion, CVer}].
+            {cversion, CVer}, {aclversion, AclVer}].
     
 unpack(Binary) ->
     <<Length:32, Load/binary>> = Binary,

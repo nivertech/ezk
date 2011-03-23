@@ -1,0 +1,58 @@
+--- Test run on 2011/03/23 10:40:49 ---
+
+
+
+Common Test v1.5.2 starting (cwd is /home/marco/ezk)
+
+
+Common Test: Running make in test directories...
+Recompile: ezk_eunit_module
+
+CWD set to: "/home/marco/ezk/logs/ct_run.test@gauss.2011-03-23_10.40.49"
+
+TEST INFO: 1 test(s), 4800 case(s) in 2 suite(s)
+
+Testing marco.ezk: Starting test, 4800 test cases
+Logger: Choose server 2
+
+=PROGRESS REPORT==== 23-Mar-2011::10:40:50 ===
+          supervisor: {local,sasl_safe_sup}
+             started: [{pid,<0.131.0>},
+                       {name,alarm_handler},
+                       {mfargs,{alarm_handler,start_link,[]}},
+                       {restart_type,permanent},
+                       {shutdown,2000},
+                       {child_type,worker}]
+
+=PROGRESS REPORT==== 23-Mar-2011::10:40:50 ===
+          supervisor: {local,sasl_safe_sup}
+             started: [{pid,<0.132.0>},
+                       {name,overload},
+                       {mfargs,{overload,start_link,[]}},
+                       {restart_type,permanent},
+                       {shutdown,2000},
+                       {child_type,worker}]
+
+=PROGRESS REPORT==== 23-Mar-2011::10:40:50 ===
+          supervisor: {local,sasl_sup}
+             started: [{pid,<0.130.0>},
+                       {name,sasl_safe_sup},
+                       {mfargs,
+                           {supervisor,start_link,
+                               [{local,sasl_safe_sup},sasl,safe]}},
+                       {restart_type,permanent},
+                       {shutdown,infinity},
+                       {child_type,supervisor}]
+
+=PROGRESS REPORT==== 23-Mar-2011::10:40:50 ===
+          supervisor: {local,sasl_sup}
+             started: [{pid,<0.133.0>},
+                       {name,release_handler},
+                       {mfargs,{release_handler,start_link,[]}},
+                       {restart_type,permanent},
+                       {shutdown,2000},
+                       {child_type,worker}]
+
+=PROGRESS REPORT==== 23-Mar-2011::10:40:50 ===
+         application: sasl
+          started_at: test@gauss

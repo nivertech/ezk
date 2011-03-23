@@ -7,7 +7,7 @@ ZK_DIR=zookeeper-${ZK_VERSION}
 compile:
 
 ## Hudson's continuous integration rule
-ci: clean compile zk_start testen common_move zk_stop
+ci: clean compile zk_start testen zk_stop
 
 ## compile test release
 
@@ -16,7 +16,7 @@ zk_stop:
 
 testen:
 	sleep 3	
-	ct_run -dir tests
+	./rebar ct
 	sleep 3
 
 common_move:

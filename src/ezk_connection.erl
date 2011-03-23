@@ -53,7 +53,6 @@ die(Reason) ->
 
 %%--------------------------- Zookeeper Functions ---------------------
 %% Return {ok, Reply}.
-%% These functions are all synchronous.
 
 %% Creates a new ZK_Node
 %% Reply = Path where Path = String

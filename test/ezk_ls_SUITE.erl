@@ -12,7 +12,13 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--define(LS_RUNS, 100).
+-define(LS_RUNS, 10).
+
+-define(LOG, ct_log:log).
+-define(LOGSUITEINIT, ct_log:suite_init).
+-define(LOGSUITEEND, ct_log:suite_end).
+-define(LOGGROUPINIT, ct_log:group_init).
+-define(LOGGROUPEND, ct_log:group_end).
 
 suite() ->
     [{timetrap,{seconds,400}}].
@@ -20,19 +26,27 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
-    Config.
+    ?LOGSUITEINIT("LS"),
+    [{suitetime, erlang:now()} |  Config].
 
-end_per_suite(_Config) ->
+end_per_suite(Config) ->
+    FinishTime = erlang:now(),
+    {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
+    Elapsed = timer:now_diff(FinishTime, StartTime),
+    ?LOGSUITEEND("LS",Elapsed),
     application:stop(ezk),
     application:stop(sasl),
     ok.
 
 init_per_group(GroupName, Config) ->
-    io:format("Group starting: ~w", [GroupName]),
-    Config.
+    ?LOGGROUPINIT(GroupName),
+    [{grouptime, erlang:now()} | Config].
 
-end_per_group(GroupName, _Config) ->
-    io:format("Group finished: ~w", [GroupName]),
+end_per_group(GroupName, Config) ->
+    FinishTime = erlang:now(),
+    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config), 
+    Elapsed = timer:now_diff(FinishTime, StartTime),
+    ?LOGGROUPEND(GroupName, Elapsed),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -60,6 +74,6 @@ ls_test(Config) ->
 ls_test(_Config, 0) ->
     ok;
 ls_test(Config, N) ->
-    {ok, _E} = ezk_connection:ls("/"),
+    {ok, _E} = ezk:ls("/"),
     ls_test(Config, N-1).
 

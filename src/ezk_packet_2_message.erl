@@ -54,7 +54,7 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
 	<<255,255,255,155,_Payload/binary>> ->
 	    Reply = {error, "Directory not found!"};   
 	<<255,255,255,248,_Payload/binary>> ->
-	    Reply = {error, "You are not allowed to do this!"};   
+	    Reply = {error, "Node has childs left or action is forbidden by acls!"};   
 	Cody -> 
 	    Reply = {unknown, "Wow, you just found an unexpected Error.", Cody}
     end,      

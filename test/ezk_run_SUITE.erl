@@ -11,27 +11,43 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--define(RUN_ROUNDS,10).
--define(DATALENGTH, 10).
+-define(RUN_ROUNDS,1).
+-define(DATALENGTH, 1).
+
+-define(LOG, ct_log:log).
+-define(LOGSUITEINIT, ct_log:suite_init).
+-define(LOGSUITEEND, ct_log:suite_end).
+-define(LOGGROUPINIT, ct_log:group_init).
+-define(LOGGROUPEND, ct_log:group_end).
+
 
 suite() ->
     [{timetrap,{seconds,300}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
-    application:start(sasl),
-    Config.
+    application:start(sasl),  
+    ?LOGSUITEINIT("RUN"),
+    [{suitetime, erlang:now()} | Config].
 
-end_per_suite(_Config) ->
+end_per_suite(Config) ->
+    FinishTime = erlang:now(),
+    {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
+    Elapsed = timer:now_diff(FinishTime, StartTime),
+    ?LOGSUITEEND("RUN",Elapsed),
     application:stop(ezk),
     application:stop(sasl),
-
     ok.
 
-init_per_group(_GroupName, Config) ->
-    Config.
+init_per_group(GroupName, Config) ->
+    ?LOGGROUPINIT(GroupName),
+    [{grouptime, erlang:now()} | Config].
 
-end_per_group(_GroupName, _Config) ->
+end_per_group(GroupName, Config) ->
+    FinishTime = erlang:now(),
+    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config), 
+    Elapsed = timer:now_diff(FinishTime, StartTime),
+    ?LOGGROUPEND(GroupName, Elapsed),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -44,7 +60,7 @@ groups() ->
     RunCases = [{run100,100},
     	      {run200,200},
     	      {run500,500},
-    	      {run700,700},
+		{run700,700},
     	      {run900,900}
     	      ],
     [{Name, [parallel], [run_test || _Id <- lists:seq(1,Para)]} 
@@ -76,34 +92,34 @@ wait_watches([{Path, _Data} | Tail]) ->
 sequenzed_delete([]) ->
     ok;
 sequenzed_delete([{Path,_Data} | Tail]) ->
-    {ok, Path} = ezk_connection:delete(Path),
+    {ok, Path} = ezk:delete(Path),
     sequenzed_delete(Tail).
 
 set_watch_and_test([])->
     ok;
 set_watch_and_test([{Path,Data} | Tail]) ->
     Self = self(),
-    {ok, {Data, _I}} = ezk_connection:get(Path, Self, {datawatch, Path}),
+    {ok, {Data, _I}} = ezk:get(Path, Self, {datawatch, Path}),
     set_watch_and_test(Tail).
 
 change_data([], NewList) ->
     NewList;
 change_data([{Path, _Data} | Tail], NewList) ->
     NewData = stringmaker(?DATALENGTH),
-    {ok, _I} = ezk_connection:set(Path, NewData),
+    {ok, _I} = ezk:set(Path, NewData),
     change_data(Tail, [{Path, NewData} | NewList]).
 
 test_data([]) ->
     ok;
 test_data([{Path, Data} | Tail]) ->
-    {ok, {Data, _I}} = ezk_connection:get(Path),
+    {ok, {Data, _I}} = ezk:get(Path),
     test_data(Tail).
 
 sequenzed_create(_Path, 0, List) ->
     List;
 sequenzed_create(Path, CyclesLeft, List) ->
     Data = stringmaker(?DATALENGTH),
-    {ok, Name} = ezk_connection:create(Path, Data, s),
+    {ok, Name} = ezk:create(Path, Data, s),
     sequenzed_create(Path, CyclesLeft-1, [{Name, Data} | List]).
 
 stringmaker(N) ->

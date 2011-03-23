@@ -6,5 +6,5 @@
               {mod,{ezk_app,[[{"192.168.1.111",2181,30000},
                               {"127.0.0.1",2181,30000}]]}},
               {env,[]},
-              {modules,[ezk_app,ezk_connection,ezk_log,ezk_message_2_packet,
-                        ezk_packet_2_message,ezk_sup]}]}.
+              {modules,[ezk,ezk_app,ezk_connection,ezk_log,
+                        ezk_message_2_packet,ezk_packet_2_message,ezk_sup]}]}.

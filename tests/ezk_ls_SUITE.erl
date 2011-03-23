@@ -12,17 +12,19 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--define(LS_RUNS, 500).
+-define(LS_RUNS, 100).
 
 suite() ->
     [{timetrap,{seconds,400}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
+    application:start(sasl),
     Config.
 
 end_per_suite(_Config) ->
     application:stop(ezk),
+    application:stop(sasl),
     ok.
 
 init_per_group(GroupName, Config) ->
@@ -53,11 +55,11 @@ all() ->
     [{group, N} || {N, _, _} <- groups()].
 
 ls_test(Config) ->
-   ls_test(Config, ?LS_RUNS).
+   ok = ls_test(Config, ?LS_RUNS).
 
 ls_test(_Config, 0) ->
     ok;
 ls_test(Config, N) ->
-    ezk_connection:ls("/"),
+    {ok, _E} = ezk_connection:ls("/"),
     ls_test(Config, N-1).
 

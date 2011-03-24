@@ -187,49 +187,8 @@ handle_info({tcp, _Port, Info}, State) ->
     ?LOG(1, "Connection: Got a message from Server"), 
     TypedMessage = ezk_packet_2_message:get_message_typ(Info), 
     ?LOG(3, "Connection: Typedmessage is ~w",[TypedMessage]),     
-    case TypedMessage of 
-%%% heartbeatreply: decrement the number of outstanding Heartbeats.
-        {heartbeat, _Heartbeat} ->
-            ?LOG(4, "Got a Heartbeat"),
-            Outstanding = State#cstate.outstanding_heartbeats,
-            NewState = State#cstate{outstanding_heartbeats = Outstanding-1},
-	    ok = inet:setopts(State#cstate.socket,[{active,once}]),
-            {noreply, NewState};
-%%% Watchevents happened:
-%%% a) parse it by using get_watch_data
-%%% b) Look at the watchtable if this event was supposed to arive
-%%% c) use send_... to send the event to the owner
-	{watchevent, Payload} ->
-            ?LOG(1,"Connection: A Watch Event arrived. Halleluja"),
-            {Typ, Path, SyncCon} = ezk_packet_2_message:get_watch_data(Payload), 
-	    Watchtable = State#cstate.watchtable,
-            ?LOG(3,"Connection: Got the data of the watchevent: ~w",[{Typ, Path, SyncCon}]),
-	    Receiver = ets:lookup(Watchtable, {Typ, Path}),
-            ?LOG(3,"Connection: Receivers are: ~w",[Receiver]),
-            ok = send_watch_events_and_erase_receivers(Watchtable, Receiver, Path,
-						       Typ, SyncCon),
-            ?LOG(3,"Connection: Receivers notified"),
-	    ok = inet:setopts(State#cstate.socket,[{active,once}]),
-	    {noreply, State};
-%%% Answers to normal requests (set, get,....)
-%%% a) Look at the dict if there is a corresponding open request
-%%% b) Erase it
-%%% c) Parse the Payload 
-%%% d) Send the answer
-	{normal, MessId, _Zxid, PayloadWithErrorcode} ->
-            ?LOG(3, "Connection: Normal Message"),  
-	    {ok, {CommId, Path, From}}  = dict:find(MessId, State#cstate.open_requests),
-            ?LOG(3, "Connection: Found dictonary entry"),
-	    NewDict = dict:erase(MessId, State#cstate.open_requests),
-	    NewState = State#cstate{open_requests = NewDict},
-            ?LOG(3, "Connection: Dictionary updated"),
-	    Reply = ezk_packet_2_message:replymessage_2_reply(CommId, Path,
-							      PayloadWithErrorcode),
-            ?LOG(3, "Connection: determinated reply"),
-	    gen_server:reply(From, Reply),
-	    ok = inet:setopts(State#cstate.socket,[{active,once}]),
-	    {noreply, NewState}
-    end;
+    handle_typed_incomming_message(TypedMessage, State);
+
 %% Its time to let the Heart bump one more time
 handle_info(heartbeat, State) ->
     case State#cstate.outstanding_heartbeats of
@@ -288,12 +247,13 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 %% b) If he has some: kill them and their Children rekursively.
 %% c) Kill the Node with delete
 macro_delete_all_childs(Path) ->
-    ?LOG(1, "Delete All: Trying to Erase ~s",[Path]),
-    {ok, Childs} = ls(Path),
+    ?LOG(3, "Delete All: Trying to Erase ~s",[Path]),
+    Childs = ls(Path),
     case Childs of
-        [] ->
-	    ok;
-	ListOfChilds ->
+        {ok, []} ->
+	    ?LOG(3, "Killing ~s",[Path]),
+	    delete(Path);
+	{ok, ListOfChilds} ->
 	    ?LOG(3, "Delete All: List of Childs: ~s",[ListOfChilds]),
             case Path of
 		"/" ->
@@ -304,11 +264,13 @@ macro_delete_all_childs(Path) ->
 		    lists:map(fun(A) ->
 				      (delete_all(Path++"/"++(binary_to_list(A)))) 
                               end, ListOfChilds)
-  
-	    end
-    end,
-    ?LOG(3, "Killing ~s",[Path]),
-    delete(Path).
+
+	    end,
+            ?LOG(3, "Killing ~s",[Path]),
+            delete(Path);
+	{error, Message} ->
+	    {error, Message}
+    end.
 
 %% Sets up a connection, performs the Handshake and saves the data to the initial State 
 establish_connection(Ip, Port, WantedTimeout) ->
@@ -340,3 +302,47 @@ establish_connection(Ip, Port, WantedTimeout) ->
     erlang:send_after(?HEARTBEATTIME, self(), heartbeat),
     ?LOG(3,"Connection established with server ~s, ~w ~n",[Ip, Port]),
     {ok, InitialState}.
+
+%%% heartbeatreply: decrement the number of outstanding Heartbeats.
+handle_typed_incomming_message({heartbeat,_HeartBeat}, State) -> 
+    ?LOG(4, "Got a Heartbeat"),
+    Outstanding = State#cstate.outstanding_heartbeats,
+    NewState = State#cstate{outstanding_heartbeats = Outstanding-1},
+    ok = inet:setopts(State#cstate.socket,[{active,once}]),
+    {noreply, NewState};    
+%%% Watchevents happened:
+%%% a) parse it by using get_watch_data
+%%% b) Look at the watchtable if this event was supposed to arive
+%%% c) use send_... to send the event to the owner
+handle_typed_incomming_message({watchevent, Payload}, State) ->
+    ?LOG(1,"Connection: A Watch Event arrived. Halleluja"),
+    {Typ, Path, SyncCon} = ezk_packet_2_message:get_watch_data(Payload), 
+    Watchtable = State#cstate.watchtable,
+    ?LOG(3,"Connection: Got the data of the watchevent: ~w",[{Typ, Path, SyncCon}]),
+    Receiver = ets:lookup(Watchtable, {Typ, Path}),
+    ?LOG(3,"Connection: Receivers are: ~w",[Receiver]),
+    ok = send_watch_events_and_erase_receivers(Watchtable, Receiver, Path,
+					       Typ, SyncCon),
+    ?LOG(3,"Connection: Receivers notified"),
+    ok = inet:setopts(State#cstate.socket,[{active,once}]),
+    {noreply, State};
+%%% Answers to normal requests (set, get,....)
+%%% a) Look at the dict if there is a corresponding open request
+%%% b) Erase it
+%%% c) Parse the Payload 
+%%% d) Send the answer
+handle_typed_incomming_message({normal, MessId, _Zxid, PayloadWithErrorcode}, State) ->
+    ?LOG(3, "Connection: Normal Message"),  
+    {ok, {CommId, Path, From}}  = dict:find(MessId, State#cstate.open_requests),
+    ?LOG(3, "Connection: Found dictonary entry"),
+    NewDict = dict:erase(MessId, State#cstate.open_requests),
+    NewState = State#cstate{open_requests = NewDict},
+    ?LOG(3, "Connection: Dictionary updated"),
+    Reply = ezk_packet_2_message:replymessage_2_reply(CommId, Path,
+						      PayloadWithErrorcode),
+    ?LOG(3, "Connection: determinated reply"),
+    gen_server:reply(From, Reply),
+    ok = inet:setopts(State#cstate.socket,[{active,once}]),
+    {noreply, NewState}.
+
+

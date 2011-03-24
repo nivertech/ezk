@@ -11,8 +11,8 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--define(RUN_ROUNDS,1).
--define(DATALENGTH, 1).
+-define(RUN_ROUNDS,70).
+-define(DATALENGTH, 40).
 
 -define(LOG, ct_log:log).
 -define(LOGSUITEINIT, ct_log:suite_init).
@@ -22,32 +22,40 @@
 
 
 suite() ->
-    [{timetrap,{seconds,300}}].
+    [{timetrap,{seconds,600}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),  
+    {ok, StartIter} = ezk:info_get_iterations(),
     ?LOGSUITEINIT("RUN"),
-    [{suitetime, erlang:now()} | Config].
+    [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].
 
 end_per_suite(Config) ->
     FinishTime = erlang:now(),
     {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
+    {suiteiter, StartIter} = lists:keyfind(suiteiter, 1, Config),
+    {ok, FinishIter} = ezk:info_get_iterations(),
     Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGSUITEEND("RUN",Elapsed),
+    Iter = FinishIter - StartIter,
+    ?LOGSUITEEND("RUN",Elapsed, Iter),
     application:stop(ezk),
     application:stop(sasl),
     ok.
 
 init_per_group(GroupName, Config) ->
     ?LOGGROUPINIT(GroupName),
-    [{grouptime, erlang:now()} | Config].
+    {ok, StartIter} = ezk:info_get_iterations(),
+    [{grouptime, erlang:now()} | [{groupiter, StartIter } | Config]].
 
 end_per_group(GroupName, Config) ->
     FinishTime = erlang:now(),
-    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config), 
+    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config),  
+    {groupiter, StartIter} = lists:keyfind(groupiter, 1, Config),
+    {ok, FinishIter} = ezk:info_get_iterations(),
+    Iter = FinishIter - StartIter,
     Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGGROUPEND(GroupName, Elapsed),
+    ?LOGGROUPEND(GroupName, Elapsed, Iter),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -58,13 +66,13 @@ end_per_testcase(_TestCase, _Config) ->
 
 groups() ->
     RunCases = [{run100,100},
-    	      {run200,200},
-    	      {run500,500},
+		{run200,200},
+		{run500,500},
 		{run700,700},
-    	      {run900,900}
-    	      ],
+		{run900,900}
+	       ],
     [{Name, [parallel], [run_test || _Id <- lists:seq(1,Para)]} 
-	    || {Name, Para} <- RunCases ]. 
+     || {Name, Para} <- RunCases ]. 
 
 all() -> 
     [{group, N} || {N, _, _} <- groups()].

@@ -12,7 +12,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--define(LS_RUNS, 10).
+-define(LS_RUNS, 250).
 
 -define(LOG, ct_log:log).
 -define(LOGSUITEINIT, ct_log:suite_init).
@@ -26,27 +26,35 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
+    {ok, StartIter} = ezk:info_get_iterations(),
     ?LOGSUITEINIT("LS"),
-    [{suitetime, erlang:now()} |  Config].
+    [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].
 
 end_per_suite(Config) ->
     FinishTime = erlang:now(),
     {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
+    {suiteiter, StartIter} = lists:keyfind(suiteiter, 1, Config),
+    {ok, FinishIter} = ezk:info_get_iterations(),
     Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGSUITEEND("LS",Elapsed),
+    Iter = FinishIter - StartIter,
+    ?LOGSUITEEND("LS",Elapsed, Iter),
     application:stop(ezk),
     application:stop(sasl),
     ok.
 
 init_per_group(GroupName, Config) ->
     ?LOGGROUPINIT(GroupName),
-    [{grouptime, erlang:now()} | Config].
+    {ok, StartIter} = ezk:info_get_iterations(),
+    [{grouptime, erlang:now()} | [{groupiter, StartIter } | Config]].
 
 end_per_group(GroupName, Config) ->
     FinishTime = erlang:now(),
     {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config), 
+    {groupiter, StartIter} = lists:keyfind(groupiter, 1, Config),
+    {ok, FinishIter} = ezk:info_get_iterations(),
+    Iter = FinishIter - StartIter,
     Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGGROUPEND(GroupName, Elapsed),
+    ?LOGGROUPEND(GroupName, Elapsed, Iter),
     ok.
 
 init_per_testcase(_TestCase, Config) ->

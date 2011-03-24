@@ -1,4 +1,4 @@
---- Test run on 2011/03/23 16:17:21 ---
+--- Test run on 2011/03/24 11:19:36 ---
 
 
 
@@ -6,35 +6,36 @@ Common Test v1.5.2 starting (cwd is /home/marco/ezk)
 
 
 Common Test: Running make in test directories...
+Recompile: ezk_run_SUITE
 
-CWD set to: "/home/marco/ezk/logs/ct_run.test@gauss.2011-03-23_16.17.22"
+CWD set to: "/home/marco/ezk/logs/ct_run.test@gauss.2011-03-24_11.19.36"
 
 TEST INFO: 1 test(s), 4800 case(s) in 2 suite(s)
 
 Testing marco.ezk: Starting test, 4800 test cases
 Logger: Choose server 2
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:22 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:19:36 ===
           supervisor: {local,sasl_safe_sup}
-             started: [{pid,<0.139.0>},
+             started: [{pid,<0.143.0>},
                        {name,alarm_handler},
                        {mfargs,{alarm_handler,start_link,[]}},
                        {restart_type,permanent},
                        {shutdown,2000},
                        {child_type,worker}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:22 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:19:36 ===
           supervisor: {local,sasl_safe_sup}
-             started: [{pid,<0.140.0>},
+             started: [{pid,<0.144.0>},
                        {name,overload},
                        {mfargs,{overload,start_link,[]}},
                        {restart_type,permanent},
                        {shutdown,2000},
                        {child_type,worker}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:22 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:19:36 ===
           supervisor: {local,sasl_sup}
-             started: [{pid,<0.138.0>},
+             started: [{pid,<0.142.0>},
                        {name,sasl_safe_sup},
                        {mfargs,
                            {supervisor,start_link,
@@ -43,51 +44,51 @@ Logger: Choose server 2
                        {shutdown,infinity},
                        {child_type,supervisor}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:22 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:19:36 ===
           supervisor: {local,sasl_sup}
-             started: [{pid,<0.141.0>},
+             started: [{pid,<0.145.0>},
                        {name,release_handler},
                        {mfargs,{release_handler,start_link,[]}},
                        {restart_type,permanent},
                        {shutdown,2000},
                        {child_type,worker}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:22 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:19:36 ===
          application: sasl
           started_at: test@gauss
 
-=INFO REPORT==== 23-Mar-2011::16:17:33 ===
+=INFO REPORT==== 24-Mar-2011::11:20:15 ===
     application: ezk
     exited: stopped
     type: temporary
 
-=INFO REPORT==== 23-Mar-2011::16:17:33 ===
+=INFO REPORT==== 24-Mar-2011::11:20:15 ===
     application: sasl
     exited: stopped
     type: temporary
 Logger: Choose server 1
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:33 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:20:15 ===
           supervisor: {local,sasl_safe_sup}
-             started: [{pid,<0.9803.0>},
+             started: [{pid,<0.9813.0>},
                        {name,alarm_handler},
                        {mfargs,{alarm_handler,start_link,[]}},
                        {restart_type,permanent},
                        {shutdown,2000},
                        {child_type,worker}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:33 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:20:15 ===
           supervisor: {local,sasl_safe_sup}
-             started: [{pid,<0.9804.0>},
+             started: [{pid,<0.9814.0>},
                        {name,overload},
                        {mfargs,{overload,start_link,[]}},
                        {restart_type,permanent},
                        {shutdown,2000},
                        {child_type,worker}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:33 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:20:15 ===
           supervisor: {local,sasl_sup}
-             started: [{pid,<0.9802.0>},
+             started: [{pid,<0.9812.0>},
                        {name,sasl_safe_sup},
                        {mfargs,
                            {supervisor,start_link,
@@ -96,25 +97,28 @@ Logger: Choose server 1
                        {shutdown,infinity},
                        {child_type,supervisor}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:33 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:20:15 ===
           supervisor: {local,sasl_sup}
-             started: [{pid,<0.9805.0>},
+             started: [{pid,<0.9815.0>},
                        {name,release_handler},
                        {mfargs,{release_handler,start_link,[]}},
                        {restart_type,permanent},
                        {shutdown,2000},
                        {child_type,worker}]
 
-=PROGRESS REPORT==== 23-Mar-2011::16:17:33 ===
+=PROGRESS REPORT==== 24-Mar-2011::11:20:15 ===
          application: sasl
           started_at: test@gauss
 
-- - - - - - - - - - - - - - - - - - - - - - - - - -
-ezk_run_SUITE:end_per_suite failed on line 35
-Reason: {badmatch,false}
-- - - - - - - - - - - - - - - - - - - - - - - - - -
+=INFO REPORT==== 24-Mar-2011::11:24:52 ===
+    application: ezk
+    exited: stopped
+    type: temporary
 
-Testing marco.ezk: *** FAILED *** end_per_suite
+=INFO REPORT==== 24-Mar-2011::11:24:52 ===
+    application: sasl
+    exited: stopped
+    type: temporary
 Testing marco.ezk: TEST COMPLETE, 4800 ok, 0 failed of 4800 test cases
 
 Updating /home/marco/ezk/logs/index.html... done

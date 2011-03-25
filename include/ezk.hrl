@@ -10,6 +10,7 @@
  		sessionid, 
  		iteration :: pos_integer(),
                 outstanding_heartbeats = 0,
+		outstanding_auths = 0,
                 watchtable
  	       }).
 

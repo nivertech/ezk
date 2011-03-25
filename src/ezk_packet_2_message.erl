@@ -17,6 +17,8 @@ get_message_typ(Data) ->
 	<<255,255,255,255, 255,255,255,255, 255,255,255,255 , 0,0,0,0, Payload/binary>> ->
 	    ?LOG(3, "packet_2_message: A Watchevent arrived"),
 	    {watchevent, Payload};
+	<<255, 255, 255, 252, 0:64, Payload/binary>> ->
+	    {authreply, Payload};
 %%% Normal Replys
         <<MessId:32, 0:32, Zxid:32, Payload/binary>> ->
 	    ?LOG(3, "packet_2_message: A normal Message arrived"),

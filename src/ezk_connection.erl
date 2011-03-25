@@ -15,7 +15,7 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-	 terminate/2, code_change/3]).
+	 terminate/2, code_change/3, addauth/2]).
 %normal functions
 -export([create/2, create/3, create/4, delete/1, set/2, set_acl/2, get/1, get_acl/1,
 	 ls2/1, ls/1, die/1]).
@@ -52,7 +52,13 @@ die(Reason) ->
     gen_server:call(?SERVER, {exit, Reason}).
 
 %%--------------------------- Zookeeper Functions ---------------------
-%% Return {ok, Reply}.
+%% All Return {ok, Reply} if it worked.
+
+%% Reply = authed 
+%% Returns {error, auth_in_progress}  if the authslot is already in use.
+%% Returns {error, auth_failed}
+addauth(Scheme, Auth) ->
+   gen_server:call(?SERVER, {addauth, Scheme, Auth}).
 
 %% Creates a new ZK_Node
 %% Reply = Path where Path = String
@@ -174,7 +180,22 @@ handle_call({watchcommand, {Command, CommandW, Path, {WType, WO, WM}}}, From, St
 %% Handles orders to die by dying
 handle_call({exit, Reason}, _From, _State) ->
     Self = self(),
-    erlang:exit(Self, Reason).
+    erlang:exit(Self, Reason);
+%% Handles auth requests
+handle_call({addauth, Scheme, Auth}, From, State) ->
+    OutstandingAuths = State#cstate.outstanding_auths,
+    case OutstandingAuths of
+	1 ->
+	    {reply,  {error, auth_in_progress}, State};
+	0 ->
+	    {ok, Packet} = ezk_message_2_packet:make_addauth_packet({add_auth, Scheme,
+								     Auth}),
+	    gen_tcp:send(State#cstate.socket, Packet),
+	    NewOpen  = dict:store(auth, From, State#cstate.open_requests),
+	    NewState = State#cstate{outstanding_auths = 1, open_requests = NewOpen },   
+	    {noreply, NewState}
+    end.
+    
 
 %% useless
 handle_cast(_Msg, State) ->
@@ -343,6 +364,19 @@ handle_typed_incomming_message({normal, MessId, _Zxid, PayloadWithErrorcode}, St
     ?LOG(3, "Connection: determinated reply"),
     gen_server:reply(From, Reply),
     ok = inet:setopts(State#cstate.socket,[{active,once}]),
+    {noreply, NewState};
+handle_typed_incomming_message({authreply, Errorcode}, State) ->
+    {ok, From}  = dict:find(auth, State#cstate.open_requests),
+    case Errorcode of
+	<<0,0,0,0>> ->
+	    Reply = {ok, authed};
+	<<255,255,255,141>> ->
+	    Reply = {ok, auth_failed}
+    end,
+    gen_server:reply(From, Reply),
+    NewDict = dict:erase(auth, State#cstate.open_requests),
+    NewState = State#cstate{open_requests = NewDict},
     {noreply, NewState}.
+
 
 

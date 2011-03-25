@@ -1,6 +1,6 @@
 -module(ezk_message_2_packet).
 -include_lib("../include/ezk.hrl").
--export([make_packet/2]).
+-export([make_packet/2, make_addauth_packet/1]).
 -export([get_permi_int/2]).
 
 %% This function gets a command and the associated data plus the actual Iteration
@@ -85,6 +85,15 @@ make_packet({ls2w, Path}, Iteration) ->
     Command = 12, 
     wrap_packet({Command, Path, Load}, Iteration ).
 
+
+%% addauth (special case, because iteration is not used, so the standard
+%% way to build a packet has to be altered.
+make_addauth_packet({add_auth, Scheme, Auth}) ->
+    Packet = <<255, 255, 255, 252, 0, 0, 0, 100,
+	       (pack_it_l2b(Scheme))/binary,
+	       (pack_it_l2b(Auth))/binary>>,
+    {ok, Packet}.
+	       
 
 %--------------------------------------------------------------------
 %Little Helpers (internal functions)

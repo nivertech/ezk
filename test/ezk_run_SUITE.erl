@@ -27,8 +27,8 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--define(RUN_ROUNDS,50).
--define(DATALENGTH, 15).
+-define(RUN_ROUNDS,40).
+-define(DATALENGTH, 12).
 
 -define(LOG, ct_log:log).
 -define(LOGSUITEINIT, ct_log:suite_init).

@@ -100,6 +100,10 @@ delete(Path) ->
 
 %% Deletes a ZK_Node and all his childs.
 %% Reply = Path where Path = String
+%% If deleting some nodes violates the acl
+%% or gets other errors the function tries the
+%% other nodes befor giving the error back, so a 
+%% maximum number of nodes is deleted.
 delete_all(Path) ->
    macro_delete_all_childs(Path).    
 

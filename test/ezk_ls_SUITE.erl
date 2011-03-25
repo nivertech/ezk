@@ -27,7 +27,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--define(LS_RUNS, 200).
+-define(LS_RUNS, 120).
 
 -define(LOG, ct_log:log).
 -define(LOGSUITEINIT, ct_log:suite_init).

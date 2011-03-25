@@ -21,7 +21,7 @@
 -define(LOGGROUPEND, ct_log:group_end).
 
 suite() ->
-    [{timetrap,{seconds,400}}].
+    [{timetrap,{seconds,700}}].
 
 init_per_suite(Config) ->
     application:start(ezk),

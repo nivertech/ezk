@@ -26,6 +26,7 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
+    ezk:delete_all("/"),
     {ok, StartIter} = ezk:info_get_iterations(),
     ?LOGSUITEINIT("LS"),
     [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].

@@ -1,11 +1,27 @@
-%%%-------------------------------------------------------------------
-%%% @author Marco <marco@gauss.gi.net>
-%%% @copyright (C) 2011, Marco
-%%% @doc
-%%%
-%%% @end
-%%% Created : 23 Mar 2011 by Marco <marco@gauss.gi.net>
-%%%-------------------------------------------------------------------
+%% -------------------------------------------------------------------
+%%
+%% ezk_run_SUITE: performs various loops of different commands in parallel 
+%%                to test parallel workflow
+%%
+%% Copyright (c) 2011 Marco Grebe. All Rights Reserved.
+%% Copyright (c) 2011 global infinipool GmbH.  All Rights Reserved.
+%%
+%% This file is provided to you under the Apache License,
+%% Version 2.0 (the "License"); you may not use this file
+%% except in compliance with the License.  You may obtain
+%% a copy of the License at
+%%
+%%   http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing,
+%% software distributed under the License is distributed on an
+%% "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+%% KIND, either express or implied.  See the License for the
+%% specific language governing permissions and limitations
+%% under the License.
+%%
+%% -------------------------------------------------------------------
+
 -module(ezk_run_SUITE).
 
 -compile(export_all).
@@ -22,7 +38,7 @@
 
 
 suite() ->
-    [{timetrap,{seconds,800}}].
+    [{timetrap,{seconds,1000}}].
 
 init_per_suite(Config) ->
     application:start(ezk),

@@ -1,11 +1,28 @@
-%%%-------------------------------------------------------------------
-%%% @author Marco <marco@gauss>
-%%% @copyright (C) 2011, Marco
-%%% @doc
-%%%
-%%% @end
-%%% Created : 14 Mar 2011 by Marco <marco@gauss>
-%%%-------------------------------------------------------------------
+%% -------------------------------------------------------------------
+%%
+%% ezk_connection: A GenServer to manage the connection. It has the access to the 
+%%                 Socket (stored in the State), keeps track of send requests,
+%%                 and manages the watches. The Main Module.
+%%
+%% Copyright (c) 2011 Marco Grebe. All Rights Reserved.
+%% Copyright (c) 2011 global infinipool GmbH.  All Rights Reserved.
+%%
+%% This file is provided to you under the Apache License,
+%% Version 2.0 (the "License"); you may not use this file
+%% except in compliance with the License.  You may obtain
+%% a copy of the License at
+%%
+%%   http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing,
+%% software distributed under the License is distributed on an
+%% "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+%% KIND, either express or implied.  See the License for the
+%% specific language governing permissions and limitations
+%% under the License.
+%%
+%% -------------------------------------------------------------------
+
 -module(ezk_connection).
 
 -behaviour(gen_server).
@@ -56,7 +73,8 @@ die(Reason) ->
 
 %% Reply = authed 
 %% Returns {error, auth_in_progress}  if the authslot is already in use.
-%% Returns {error, auth_failed}
+%% Returns {error, auth_failed} if server rejected auth
+%% Returns {error, unknown, ErrorCodeBin} if something new happened
 addauth(Scheme, Auth) ->
    gen_server:call(?SERVER, {addauth, Scheme, Auth}).
 
@@ -365,17 +383,21 @@ handle_typed_incomming_message({normal, MessId, _Zxid, PayloadWithErrorcode}, St
     gen_server:reply(From, Reply),
     ok = inet:setopts(State#cstate.socket,[{active,once}]),
     {noreply, NewState};
+%%% Answers to a addauth. 
+%%% if there is an errorcode then there wa an error. if not there wasn't
 handle_typed_incomming_message({authreply, Errorcode}, State) ->
     {ok, From}  = dict:find(auth, State#cstate.open_requests),
     case Errorcode of
 	<<0,0,0,0>> ->
 	    Reply = {ok, authed};
 	<<255,255,255,141>> ->
-	    Reply = {ok, auth_failed}
+	    Reply = {error, auth_failed};
+	Else  -> 
+	    Reply = {error, unknown, Else}
     end,
     gen_server:reply(From, Reply),
     NewDict = dict:erase(auth, State#cstate.open_requests),
-    NewState = State#cstate{open_requests = NewDict},
+    NewState = State#cstate{open_requests = NewDict, outstanding_auths = 0},
     {noreply, NewState}.
 
 

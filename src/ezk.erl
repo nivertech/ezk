@@ -1,3 +1,27 @@
+
+%% -------------------------------------------------------------------
+%%
+%% ezk: The Interface Module. No real functions (but help/0).
+%%
+%% Copyright (c) 2011 Marco Grebe. All Rights Reserved.
+%% Copyright (c) 2011 global infinipool GmbH.  All Rights Reserved.
+%%
+%% This file is provided to you under the Apache License,
+%% Version 2.0 (the "License"); you may not use this file
+%% except in compliance with the License.  You may obtain
+%% a copy of the License at
+%%
+%%   http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing,
+%% software distributed under the License is distributed on an
+%% "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+%% KIND, either express or implied.  See the License for the
+%% specific language governing permissions and limitations
+%% under the License.
+%%
+%% -------------------------------------------------------------------
+
 -module(ezk).
 
 %functions creating and deleting zkNodes
@@ -39,6 +63,8 @@ help() ->
     io:format("|---------------------------------------------------|~n"),
     io:format("| In Progress:                                      |~n"),
     io:format("| ezk:auth/2       : Scheme, Id                     |~n"),
+    io:format("| --> Dangerous function. Fail auths get the        |~n"),
+    io:format("|     zkServer to close the Session!                |~n"),
     io:format("|---------------------------------------------------|~n"),
     io:format("| Datatypes:                                        |~n"),
     io:format("| Acl = {Scheme,Id, [Permission]}                   |~n"),

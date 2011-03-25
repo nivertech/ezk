@@ -1,3 +1,27 @@
+%% -------------------------------------------------------------------
+%%
+%% ezk_message_2_packet: A Module which contains functions to convert 
+%%                       Erlang representations into binarys to send them
+%%                       to the zkServer.
+%%
+%% Copyright (c) 2011 Marco Grebe. All Rights Reserved.
+%% Copyright (c) 2011 global infinipool GmbH.  All Rights Reserved.
+%%
+%% This file is provided to you under the Apache License,
+%% Version 2.0 (the "License"); you may not use this file
+%% except in compliance with the License.  You may obtain
+%% a copy of the License at
+%%
+%%   http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing,
+%% software distributed under the License is distributed on an
+%% "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+%% KIND, either express or implied.  See the License for the
+%% specific language governing permissions and limitations
+%% under the License.
+%%
+%% -------------------------------------------------------------------
 -module(ezk_message_2_packet).
 -include_lib("../include/ezk.hrl").
 -export([make_packet/2, make_addauth_packet/1]).
@@ -89,7 +113,7 @@ make_packet({ls2w, Path}, Iteration) ->
 %% addauth (special case, because iteration is not used, so the standard
 %% way to build a packet has to be altered.
 make_addauth_packet({add_auth, Scheme, Auth}) ->
-    Packet = <<255, 255, 255, 252, 0, 0, 0, 100,
+    Packet = <<255, 255, 255, 252, 0, 0, 0, 100, 0, 0, 0, 0,
 	       (pack_it_l2b(Scheme))/binary,
 	       (pack_it_l2b(Auth))/binary>>,
     {ok, Packet}.

@@ -21,7 +21,7 @@
 %%
 %% --------------------------------------------------------------------
 
-module(ezk_eunit_module).
+-module(ezk_eunit_module).
 -include_lib("eunit/include/eunit.hrl").
 
 -define(TO_RUN_SINGLE,600).  %% 100   rounds              -> 8,4  s

@@ -156,15 +156,16 @@ getbinary_2_list(Binary) ->
     ?LOG(3,"p2m: Trying to match Parameterdata"),
     <<0:32,              Czxid:32,        0:32,         Mzxid:32,
       Ctime:64,                           Mtime:64,
-      DaVer:32,          CVer:32,         AclVer:32,    0:64,  
+      DaVer:32,          CVer:32,         AclVer:32,    EpheOwner:64,  
                          DaLe:32,         NumChi:32,    0:32,
       Pzxid:32>> = Binary,
     ?LOG(3,"p2m: Matching Parameterdata Successfull"),
     [{czxid, Czxid}, {mzxid, Mzxid},
-            {ctime, Ctime}, {mtime, Mtime},
-            {dataversion, DaVer}, {datalength, DaLe},
-            {number_children,NumChi}, {pzxid, Pzxid},
-            {cversion, CVer}, {aclversion, AclVer}].
+     {ctime, Ctime}, {mtime, Mtime},
+     {dataversion, DaVer}, {datalength, DaLe},
+     {number_children,NumChi}, {pzxid, Pzxid},
+     {cversion, CVer}, {aclversion, AclVer},
+     {ephe_owner, EpheOwner}].
 %% uses the first 4 Byte of a binary to determine the lengths of the data and then 
 %% returns a pair {Data, Leftover}
 unpack(Binary) ->

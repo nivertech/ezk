@@ -33,7 +33,7 @@
 %macros
 -export([delete_all/1]).
 %infos
--export([info_get_iterations/0, help/0]).
+-export([info_get_iterations/0,  help/0]).
 %Stop commands (forcing Client to choose a new random Server from List)
 -export([die/0, die/1]).
 
@@ -115,7 +115,7 @@ get(Path) ->
    
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
-%% M = {WatchMessage, {Path, Type, SyncCon}
+%% M = {WatchMessage, {Path, Type, SyncCon}}
 %% with Type = child
 get(Path, WatchOwner, WatchMessage) ->
     ezk_connection:get(Path, WatchOwner, WatchMessage).

@@ -166,6 +166,8 @@ info_get_iterations() ->
 %% Handles calls for Number of Iteration
 handle_call({info, get_iterations}, _From, State) ->
     {reply, {ok, State#cstate.iteration}, State};
+handle_call({info, get_watches}, _From, State) ->
+    {reply, {ok, ets:first(State#cstate.watchtable)}, State};
 %% Handles normal commands (get/1, set/2, ...) by
 %% a) determinate the corresponding packet to send this request to zk_server
 %% b) Save that the Request was send in the open_requests dict (key: actual iteration)
@@ -196,7 +198,7 @@ handle_call({watchcommand, {Command, CommandW, Path, {WType, WO, WM}}}, From, St
 	    ?LOG(3," Connection: Search got []"),
 	    handle_call({command, {CommandW, Path}}, From, State);
 	_Else -> 
-	    ?LOG(3," Connection: Already Watches set tot this path/typ"),
+	    ?LOG(3," Connection: Already Watches set to this path/typ"),
 	    handle_call({command, {Command, Path}}, From, State)
     end;
 %% Handles orders to die by dying
@@ -281,7 +283,7 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 	[{Key, WatchOwner, WatchMessage}|T] ->
             ?LOG(1, "Connection: Send something to ~w", [WatchOwner]),
             WatchOwner ! {WatchMessage, {Path, Typ, SyncCon}},
-	    ets:delete(Table, {Key, WatchOwner, WatchMessage}),
+	    ets:delete(Table, Key),
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
     end.       
 
@@ -366,6 +368,7 @@ handle_typed_incomming_message({watchevent, Payload}, State) ->
     ?LOG(3,"Connection: Receivers are: ~w",[Receiver]),
     ok = send_watch_events_and_erase_receivers(Watchtable, Receiver, Path,
 					       Typ, SyncCon),
+    ?LOG(3,"Connection: the first element in WT ~w",[ets:first(Watchtable)]), 
     ?LOG(3,"Connection: Receivers notified"),
     ok = inet:setopts(State#cstate.socket,[{active,once}]),
     {noreply, State};

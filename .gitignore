@@ -1,0 +1,12 @@
+*~
+*#*
+*.beam
+ebin/
+ct_log/
+logs/
+.eun*
+*.dump
+*.html
+zook*
+*gauss*
+.eunit/

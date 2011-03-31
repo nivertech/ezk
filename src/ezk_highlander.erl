@@ -27,9 +27,10 @@
 
 -export([behaviour_info/1]).
 
--export([start_link/2, failover/2, get_child_pid/1]).
+-export([start_link/2, start_link/3, failover/2, get_child_pid/1]).
 
--record(runargs, {highland_root, mfa, runpid}).
+-record(runargs, {highland_root, mfa, runpid, highlandnumber}).
+-record(tryargs, {mfa, mod_root, theonedir, theonenode, ident_str, number, child_pid}).
 
 -define(LEVEL, 0).
 
@@ -43,20 +44,31 @@ behaviour_info(callbacks) ->
 start_link(DirName, MFA) ->
     Caller = self(),
     Callee = spawn(fun() ->
-			   start_intern(DirName, MFA, Caller) end),
+			   start_intern(DirName, MFA, Caller, 1) end),
     {ok, Callee}.
 
+%% The Startfunction
+%% DirName is the name of the highlander directory which should be used in 
+%% ZooKeeper.
+%% MFA is the MFA of the function that should be run with highlanderstrategy.
+start_link(DirName, MFA, N) ->
+    Caller = self(),
+    Callee = spawn(fun() ->
+			   start_intern(DirName, MFA, Caller, N) end),
+    {ok, Callee}.
 %% The function which manages the rise of the highlander.
 %% a) starts ezk
 %% b) creates the needed directories
 %% c) goes in highlanderelection state
 %% d) when successfully fought his way to the top sends the caller an ok.
 %% e) waits for further requests.
-start_intern(DirName, MFA, Caller)  ->
+start_intern(DirName, MFA, Caller, Number)  ->
     ok = start_ezk(),
     ModuleRoot = "/highlander/" ++ DirName,
+    log(1,"Starting tryer"),
     ok = make_directorys(ModuleRoot),
-    RunArgs = try_to_get_the_one(ModuleRoot, MFA),
+    State = init_state(ModuleRoot, MFA),
+    RunArgs = try_to_get_the_one(State, 1, Number),
     log(1, "The Caller id is ~w, my own is ~w ~n ",[Caller, self()]),
     running(RunArgs).
     
@@ -69,41 +81,62 @@ start_ezk() ->
 	_Else  -> error
     end.
 
+init_state(ModuleRoot, MFA) ->
+    Identifier = atom_to_list(node()) ++ " " ++ pid_to_list(self()),
+    TheOneNode = ModuleRoot ++ "/theone/iamtheone",
+    TheOneDir = ModuleRoot ++ "/theone",
+    #tryargs{mfa = MFA, mod_root = ModuleRoot, theonedir = TheOneDir,
+		     theonenode = TheOneNode, ident_str =Identifier}.
+
+try_create_e(State, Number) ->
+    TheOneNode = State#tryargs.theonenode ++ [Number+48],
+    ezk:create(TheOneNode, State#tryargs.ident_str, e).
+    
+start_child(State, Number) ->
+    {Module, Function, Args}  = State#tryargs.mfa,
+    log(1, "Got the one number ~w~n",[Number]),
+    Self = self(),
+    Id = spawn_link(Module, Function, [Number | [Self | Args]]),
+    State#tryargs{number = Number, child_pid = Id}.
+    
+
 %% trys to get the highlander.
 %% a) creating the epheremal highlandernode
 %% if succeeded starts the mfa and determines the data needed for own loop
 %% if not sets a childwatch to the father of the highlander
 %% and when watch is triggered starts all over again.
-try_to_get_the_one(ModuleRoot, MFA = {Module, Function, Args}) ->
-    Self = self(),
-    log(1, "try to get the one ~w ~n", [Self]),
-    Identifier = atom_to_list(node()) ++ " " ++ pid_to_list(Self),
-    TheOneNode = ModuleRoot ++ "/theone/iamtheone",
-    TheActualOne = ezk:create(TheOneNode, Identifier, e),
-    case TheActualOne of
+try_to_get_the_one(State, MaxNumber, MaxNumber) ->
+    case try_create_e(State, MaxNumber) of
 	{ok, _I} ->
-	    Id = spawn_link(Module, Function, [Self | Args]),
-	    #runargs{runpid = Id, mfa = MFA, highland_root = ModuleRoot};
+	    start_child(State, MaxNumber);
 	_Else ->
-	    log(1, "failed to get the one ~w ~n", [Self]),
-	    TheOneDir = ModuleRoot ++ "/theone",
-	    {ok, _I2} = ezk:ls(TheOneDir, Self, theonedied),
-	    log(1, "set watch ~w ~n", [Self]),
+	    TheOneDir = State#tryargs.theonedir,
+	    {ok, _I2} = ezk:ls(TheOneDir, self(), theonedied),
+	    log(1, "set watch ~w ~n", [self()]),
 	    %%It can happen that the one dies before the childwatch is set.
 	    %%Therefor we look if it happened.
-	    NoOneKilledTheNode = ezk:get(TheOneNode),
-	    case NoOneKilledTheNode of
+	    TheOneNode = State#tryargs.theonenode ++ [MaxNumber+48],
+	    case ezk:get(TheOneNode) of
 		{ok, _I} ->
-		    log(1, "watch works ~w ~n", [Self]),
+		    log(1, "watch works ~w ~n", [self()]),
 		    receive
 			{theonedied, _I1} ->
-			    try_to_get_the_one(ModuleRoot, MFA)
+			    try_to_get_the_one(State, 1, MaxNumber)
 		    end;
 		_Else2 -> 
-		    log(1, "watch corrupted ~w ~n", [Self]),
-		    try_to_get_the_one(ModuleRoot, MFA)
+		    log(1, "watch corrupted ~w ~n", [self()]),
+		    try_to_get_the_one(State, 1, MaxNumber)
 	    end
+    end;
+try_to_get_the_one(State, TryToGet, MaxNumber) ->
+    case try_create_e(State, TryToGet) of
+	{ok, _I} ->
+	    start_child(State, TryToGet);
+	_Else ->
+	    try_to_get_the_one(State, TryToGet+1, MaxNumber)
     end.
+
+
 
 %% called to stop an actual highlander.
 failover(PId, Reason) ->
@@ -123,37 +156,35 @@ get_child_pid(PId) ->
     end.
     
 %% the loop the highlander gets into if he got the choosen.
-running(RunArgs) ->
+running(State) ->
     log(1,"waiting~n"),
     receive
 	{failover, From, Reason} ->
 	    log(1,"Shutting down"),
-	    {Module, _F, _A} = RunArgs#runargs.mfa,
-	    ChildPId = RunArgs#runargs.runpid,
-	    ModuleRoot = RunArgs#runargs.highland_root,
+	    {Module, _F, _A} = State#tryargs.mfa,
+	    ChildPId = State#tryargs.child_pid,
 	    Module:terminate(ChildPId, Reason),
 	    log(1,"stated terminate to child"),
 	    timer:sleep(2000),
 	    process_flag(trap_exit, true),
 	    log(1,"kill remaining childs"),
-
 	    erlang:exit(ChildPId, Reason),
-	    TheOne = ModuleRoot ++ "/theone/iamtheone",
+	    TheOneNode = State#tryargs.theonenode ++ [State#tryargs.number+48],
 	    log(1,"delete zoonode"),
-	    ezk:delete(TheOne),
+	    ezk:delete(TheOneNode),
 	    log(1,"Shutdown complete"),
 	    From ! {failover, ok},
 	    {terminated, Reason};
 	{get_child_pid, From} ->
 	    log(1,"got childpid request~n"),
-	    ChildPId = RunArgs#runargs.runpid,
+	    ChildPId = State#tryargs.child_pid,
 	    log(1,"childid is ~w~n",[ChildPId]),
 	    From ! {get_child_pid, ChildPId},
 	    log(1,"sended childpid reply~n"),
-	    running(RunArgs);
+	    running(State);
 	Else ->
 	    log(0,"GOT A MESSAGE: ~w ~n",[Else]),
-	    running(RunArgs)	    
+	    running(State)	    
     end.
 
 %% secures that the zkNodes

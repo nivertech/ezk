@@ -99,8 +99,8 @@ high_wait(Dict, I) ->
 	    Cycles  = random:uniform(80),
 	    ok      = send_receive_n(PId, Cycles),
 	    ezk_highlander:failover(FatherPId, "test"),
-	    io:format("Finished with highlaner number ~w~n",[N])
-	    high_wait(NewDict,I-1),
+	    io:format("Finished with highlaner number ~w~n",[N]),
+	    high_wait(NewDict,I-1)
     end.
     
 send_receive_n(_PId, 0) ->

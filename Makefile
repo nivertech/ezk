@@ -19,9 +19,9 @@ common_move:
 compile: 
 	./rebar compile
 
-test:	zk_start run_test zk_stop
+test:	zk_start testen zk_stop
 
-run_test:
+testen:
 	sleep 5	
 	./rebar ct
 	sleep 5
@@ -46,4 +46,4 @@ clean:
 	rm -rf ${ZK_DIR}
 
 
-.PHONY: clean zk_start zk_config compile test run_test ci
+.PHONY: clean zk_start zk_config compile test testen ci

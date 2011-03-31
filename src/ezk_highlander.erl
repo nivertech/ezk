@@ -28,8 +28,8 @@
 -export([behaviour_info/1]).
 
 -export([start_link/2, start_link/3, failover/2, get_child_pid/1]).
+-export([change_number/2, change_number_hard/2]).
 
--record(runargs, {highland_root, mfa, runpid, highlandnumber}).
 -record(tryargs, {mfa, mod_root, theonedir, theonenode, ident_str, number, child_pid}).
 
 -define(LEVEL, 0).
@@ -121,7 +121,11 @@ try_to_get_the_one(State, MaxNumber, MaxNumber) ->
 		    log(1, "watch works ~w ~n", [self()]),
 		    receive
 			{theonedied, _I1} ->
-			    try_to_get_the_one(State, 1, MaxNumber)
+			    try_to_get_the_one(State, 1, MaxNumber);
+			{change_number, NewNumber} ->
+			    try_to_get_the_one(State, 1, NewNumber);
+			{change_number_hard, NewNumber} ->
+			    try_to_get_the_one(State, 1, NewNumber)
 		    end;
 		_Else2 -> 
 		    log(1, "watch corrupted ~w ~n", [self()]),
@@ -136,24 +140,29 @@ try_to_get_the_one(State, TryToGet, MaxNumber) ->
 	    try_to_get_the_one(State, TryToGet+1, MaxNumber)
     end.
 
+call(PId, Atom, Para) ->
+    PId ! {Atom, self(), Para},
+    receive
+	{Atom, Reply} ->
+	    Reply
+    end.
+	
 
 
 %% called to stop an actual highlander.
 failover(PId, Reason) ->
-    PId ! {failover, self(), Reason},
-    receive
-	{failover, ok} ->
-	    ok
-    end.
+    call(PId, failover, Reason).
 
+change_number(PId, NewNumber) ->
+    call(PId, change_number, NewNumber).
+
+change_number_hard(PId, NewNumber) ->
+    call(PId, change_number_hard, NewNumber).
+    
 get_child_pid(PId) ->
-    log(1,"send childpid reqest~n"),
-    PId ! {get_child_pid, self()},
-    log(1,"wait for childpid reply~n"),
-    receive
-	{get_child_pid, ChildPId} ->
-	    {ok, ChildPId}
-    end.
+    call(PId, get_child_pid, undef).
+
+
     
 %% the loop the highlander gets into if he got the choosen.
 running(State) ->
@@ -175,13 +184,22 @@ running(State) ->
 	    log(1,"Shutdown complete"),
 	    From ! {failover, ok},
 	    {terminated, Reason};
-	{get_child_pid, From} ->
+	{get_child_pid, From, undef} ->
 	    log(1,"got childpid request~n"),
 	    ChildPId = State#tryargs.child_pid,
 	    log(1,"childid is ~w~n",[ChildPId]),
-	    From ! {get_child_pid, ChildPId},
+	    From ! {get_child_pid, {ok, ChildPId}},
 	    log(1,"sended childpid reply~n"),
 	    running(State);
+	{change_number_hard, From, NewNumber} ->
+	    OwnNumber = State#tryargs.number,
+	    if
+		OwnNumber > NewNumber ->
+		    From ! {change_number_hard, {ok, killed}},
+		    exit("To many Highlander");
+		true -> 
+		    From ! {change_number_hard, {ok, alive}}
+	    end;	    
 	Else ->
 	    log(0,"GOT A MESSAGE: ~w ~n",[Else]),
 	    running(State)	    

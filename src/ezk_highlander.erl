@@ -68,7 +68,7 @@ start_intern(DirName, MFA, Caller, Number)  ->
     log(1,"Starting tryer"),
     ok = make_directorys(ModuleRoot),
     State = init_state(ModuleRoot, MFA),
-    RunArgs = try_to_get_the_one(State, 1, Number),
+    RunArgs = try_to_get_the_one(State, 0, Number),
     log(1, "The Caller id is ~w, my own is ~w ~n ",[Caller, self()]),
     running(RunArgs).
     
@@ -81,6 +81,7 @@ start_ezk() ->
 	_Else  -> error
     end.
 
+%% builds the String paths
 init_state(ModuleRoot, MFA) ->
     Identifier = atom_to_list(node()) ++ " " ++ pid_to_list(self()),
     TheOneNode = ModuleRoot ++ "/theone/iamtheone",
@@ -88,11 +89,16 @@ init_state(ModuleRoot, MFA) ->
     #tryargs{mfa = MFA, mod_root = ModuleRoot, theonedir = TheOneDir,
 		     theonenode = TheOneNode, ident_str =Identifier}.
 
+%% creates an epheremal node with the state path and the actual number as suffix
 try_create_e(State, Number) ->
     TheOneNode = State#tryargs.theonenode ++ [Number+48],
     ezk:create(TheOneNode, State#tryargs.ident_str, e).
     
+%% Starts a child process which computes the mfa given in state.
 start_child(State, Number) ->
+    receive
+	{theonedied, _I1} -> ok
+    end,
     {Module, Function, Args}  = State#tryargs.mfa,
     log(1, "Got the one number ~w~n",[Number]),
     Self = self(),
@@ -101,40 +107,32 @@ start_child(State, Number) ->
     
 
 %% trys to get the highlander.
-%% a) creating the epheremal highlandernode
-%% if succeeded starts the mfa and determines the data needed for own loop
-%% if not sets a childwatch to the father of the highlander
-%% and when watch is triggered starts all over again.
+%% If the node can be created it is the highlander and starts. 
+%% 
+try_to_get_the_one(State, 0, MaxNumber) ->
+    log(1,"watch set"),
+    TheOneDir = State#tryargs.theonedir,
+    {ok, _I2} = ezk:ls(TheOneDir, self(), theonedied),
+    try_to_get_the_one(State, 1, MaxNumber);
 try_to_get_the_one(State, MaxNumber, MaxNumber) ->
     case try_create_e(State, MaxNumber) of
 	{ok, _I} ->
 	    start_child(State, MaxNumber);
 	_Else ->
-	    TheOneDir = State#tryargs.theonedir,
-	    {ok, _I2} = ezk:ls(TheOneDir, self(), theonedied),
-	    log(1, "set watch ~w ~n", [self()]),
-	    %%It can happen that the one dies before the childwatch is set.
-	    %%Therefor we look if it happened.
-	    TheOneNode = State#tryargs.theonenode ++ [MaxNumber+48],
-	    case ezk:get(TheOneNode) of
-		{ok, _I} ->
-		    log(1, "watch works ~w ~n", [self()]),
-		    receive
-			{theonedied, _I1} ->
-			    try_to_get_the_one(State, 1, MaxNumber);
-			{change_number, NewNumber} ->
-			    try_to_get_the_one(State, 1, NewNumber);
-			{change_number_hard, NewNumber} ->
-			    try_to_get_the_one(State, 1, NewNumber)
-		    end;
-		_Else2 -> 
-		    log(1, "watch corrupted ~w ~n", [self()]),
-		    try_to_get_the_one(State, 1, MaxNumber)
+	    receive
+		{theonedied, _I1} ->
+		    log(1,"Received watch"),
+		    try_to_get_the_one(State, 0, MaxNumber);
+		{change_number, NewNumber} ->
+		    try_to_get_the_one(State, 1, NewNumber);
+		{change_number_hard, NewNumber} ->
+		    try_to_get_the_one(State, 1, NewNumber)
 	    end
     end;
-try_to_get_the_one(State, TryToGet, MaxNumber) ->
+try_to_get_the_one(State, TryToGet, MaxNumber) ->	
     case try_create_e(State, TryToGet) of
 	{ok, _I} ->
+	    log(1,"I am Number ~w",[TryToGet]),
 	    start_child(State, TryToGet);
 	_Else ->
 	    try_to_get_the_one(State, TryToGet+1, MaxNumber)

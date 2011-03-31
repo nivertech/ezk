@@ -11,7 +11,6 @@ ci: clean compile test
 
 ## compile test release
 
-
 common_move:
 	mkdir -p ct_log
 	mv ct_run* ct_log/

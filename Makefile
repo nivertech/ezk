@@ -7,17 +7,10 @@ ZK_DIR=zookeeper-${ZK_VERSION}
 compile:
 
 ## Hudson's continuous integration rule
-ci: clean compile zk_start testen zk_stop
+ci: clean compile test
 
 ## compile test release
 
-zk_stop: 
-	${ZK_DIR}/bin/zkServer.sh stop	
-
-testen:
-	sleep 3	
-	./rebar ct
-	sleep 3
 
 common_move:
 	mkdir -p ct_log
@@ -26,13 +19,21 @@ common_move:
 compile: 
 	./rebar compile
 
-.PHONY: ci test
+test:	zk_start run_test zk_stop
+
+run_test:
+	sleep 5	
+	./rebar ct
+	sleep 5
 
 zk_start: zk_config
-	mkdir ${ZK_DIR}/data
 	${ZK_DIR}/bin/zkServer.sh start
 
-zk_config: ${ZK_DIR}
+zk_stop: 
+	${ZK_DIR}/bin/zkServer.sh stop	
+
+zk_config: ${ZK_DIR} 
+	mkdir -p ${ZK_DIR}/data/t
 	cp ./zoo.cfg ${ZK_DIR}/conf/zoo.cfg
 
 ${ZK_DIR}: ${ZK_ARCHIVE}
@@ -44,4 +45,5 @@ ${ZK_ARCHIVE}:
 clean:
 	rm -rf ${ZK_DIR}
 
-.PHONY: clean zk_start zk_config compile
+
+.PHONY: clean zk_start zk_config compile test run_test ci

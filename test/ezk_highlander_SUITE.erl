@@ -1,7 +1,7 @@
 
 %% -------------------------------------------------------------------
 %%
-%% ezk_ls_SUITE: performs various loops of  ls commands in parallel to test high load
+%% ezk_highlander_SUITE: CT Suite for the highlander behaviour.
 %%
 %% Copyright (c) 2011 Marco Grebe. All Rights Reserved.
 %% Copyright (c) 2011 global infinipool GmbH.  All Rights Reserved.
@@ -21,29 +21,30 @@
 %% under the License.
 %%
 %% -------------------------------------------------------------------
--module(ezk_ls_SUITE).
+
+
+-module(ezk_highlander_SUITE).
 
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
-
--define(LS_RUNS, 50).
 
 -define(LOG, ct_log:log).
 -define(LOGSUITEINIT, ct_log:suite_init).
 -define(LOGSUITEEND, ct_log:suite_end).
 -define(LOGGROUPINIT, ct_log:group_init).
 -define(LOGGROUPEND, ct_log:group_end).
+-define(HIGHIMPL, test_highlander_impl:start_link).
 
 suite() ->
-    [{timetrap,{seconds,700}}].
+    [{timetrap,{seconds,900}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
     ezk:delete_all("/"),
     {ok, StartIter} = ezk:info_get_iterations(),
-    ?LOGSUITEINIT("LS"),
+    ?LOGSUITEINIT("HIGHLANDER"),
     [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].
 
 end_per_suite(Config) ->
@@ -53,24 +54,15 @@ end_per_suite(Config) ->
     {ok, FinishIter} = ezk:info_get_iterations(),
     Elapsed = timer:now_diff(FinishTime, StartTime),
     Iter = FinishIter - StartIter,
-    ?LOGSUITEEND("LS",Elapsed, Iter),
+    ?LOGSUITEEND("HIGHLANDER",Elapsed, Iter),
     application:stop(ezk),
     application:stop(sasl),
     ok.
 
-init_per_group(GroupName, Config) ->
-    ?LOGGROUPINIT(GroupName),
-    {ok, StartIter} = ezk:info_get_iterations(),
-    [{grouptime, erlang:now()} | [{groupiter, StartIter } | Config]].
+init_per_group(_GroupName, Config) ->
+    Config.
 
-end_per_group(GroupName, Config) ->
-    FinishTime = erlang:now(),
-    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config), 
-    {groupiter, StartIter} = lists:keyfind(groupiter, 1, Config),
-    {ok, FinishIter} = ezk:info_get_iterations(),
-    Iter = FinishIter - StartIter,
-    Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGGROUPEND(GroupName, Elapsed, Iter),
+end_per_group(_GroupName, _Config) ->
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -79,25 +71,56 @@ init_per_testcase(_TestCase, Config) ->
 end_per_testcase(_TestCase, _Config) ->
     ok.
 
-groups() ->
-    LsCases = [{ls100,100},
-    	      {ls200,200},
-    	      {ls500,500},
-    	      {ls700,700},
-    	      {ls900,900}
-    	      ],
- [{Name, [parallel], [ls_test || _Id <- lists:seq(1,Para)]} 
-	    || {Name, Para} <- LsCases ].
+groups() ->    
+    [].
 
-all() ->
-    [{group, N} || {N, _, _} <- groups()].
+all() -> 
+    [high_test].
 
-ls_test(Config) ->
-   ok = ls_test(Config, ?LS_RUNS).
+high_test(_Config) ->
+    Paras = [50],
+    lists:map(
+      fun(I) -> high_tester(I) end, Paras),
+    ok.
 
-ls_test(_Config, 0) ->
+high_tester(I) ->
+    io:format("Start testing with ~w highlanderwannabes~n",[I]),
+    Dict = spawn_list_highlander(self(), dict:new(), I),
+    ok = high_wait(Dict, I),
+    io:format("Test finished~n").
+
+high_wait(_Dict, 0) ->
     ok;
-ls_test(Config, N) ->
-    {ok, _E} = ezk:ls("/"),
-    ls_test(Config, N-1).
+high_wait(Dict, I) ->
+    receive 
+	{init, PId, N, FatherPId} ->
+	    io:format("Starting with highlaner number ~w~n",[N]),
+	    NewDict = dict:erase(FatherPId, Dict),
+	    Cycles  = random:uniform(80),
+	    ok      = send_receive_n(PId, Cycles),
+	    ezk_highlander:failover(FatherPId, "test"),
+	    high_wait(NewDict,I-1),
+	    io:format("Finished with highlaner number ~w~n",[N])
+    end.
+    
+send_receive_n(_PId, 0) ->
+    ok;
+send_receive_n(PId, Cycles) ->
+    PId ! {ping, self()},
+    receive 
+	{pong, PId} ->
+	    send_receive_n(PId, Cycles-1)
+    end.
+
+
+spawn_list_highlander(_Waiter, Dict, 0) ->
+    Dict;
+spawn_list_highlander(Waiter, Dict, I) ->
+    {ok, NewPId} = ?HIGHIMPL(Waiter, I),
+    io:format("Spawned ~w with pid ~w~n",[I, NewPId]),
+    spawn_list_highlander(Waiter, dict:append(NewPId, I, Dict), I-1).
+
+    
+		      
+
 

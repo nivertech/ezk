@@ -65,6 +65,7 @@ help() ->
     io:format("| ezk:auth/2       : Scheme, Id                     |~n"),
     io:format("| --> Dangerous function. Fail auths get the        |~n"),
     io:format("|     zkServer to close the Session!                |~n"),
+    io:format("| n_create/4, n_create/5, n_ls/2                    |~n"),
     io:format("|---------------------------------------------------|~n"),
     io:format("| Datatypes:                                        |~n"),
     io:format("| Acl = {Scheme,Id, [Permission]}                   |~n"),
@@ -83,10 +84,15 @@ help() ->
 %% Reply = Path where Path = String
 create(Path, Data) ->
      ezk_connection:create(Path, Data).
+n_create(Path, Data, Receiver, Tag) ->
+     ezk_connection:n_create(Path, Data, Receiver, Tag).
 
 %% Typ = e | s | es (stands for etheremal, sequenzed or both)
 create(Path, Data, Typ) ->
     ezk_connection:create(Path, Data, Typ).
+n_create(Path, Data, Typ, Receiver, Tag) ->
+    ezk_connection:create(Path, Data, Typ, Receiver, Tag).
+
 
 %% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
 %% with Scheme and Id = String
@@ -139,6 +145,8 @@ set_acl(Path, Acls) ->
 %% Reply = [ChildName] where ChildName = <<"Name">>
 ls(Path) ->
    ezk_connection:ls(Path).
+ls(Path, Receiver, Tag) ->
+   ezk_connection:ls(Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls(Path, WatchOwner, WatchMessage) ->

@@ -34,10 +34,13 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3, addauth/2]).
 %normal functions
--export([create/2, create/3, create/4, delete/1, set/2, set_acl/2, get/1, get_acl/1,
-	 ls2/1, ls/1, die/1]).
+-export([create/2,   create/3,  create/4, delete/1, set/2, set_acl/2]).
+-export([n_create/4, n_create/5]).
+-export([get/1, get_acl/1, ls2/1, ls/1, die/1]).
+-export([n_ls/3]).
 %functions dealing with watches
 -export([ls/3, get/3, ls2/3]).
+-export([n_ls/3]).
 %macros
 -export([delete_all/1]).
 %infos
@@ -145,6 +148,8 @@ set_acl(Path, Acls) ->
 %% Reply = [ChildName] where ChildName = <<"Name">>
 ls(Path) ->
    gen_server:call(?SERVER, {command, {ls, Path}}).
+n_ls(Path, Receiver, Tag) ->
+   gen_server:call(?SERVER, {nbcommand, {ls, Path}, Receiver, Tag}).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls(Path, WatchOwner, WatchMessage) ->

@@ -82,9 +82,13 @@ addauth(Scheme, Auth) ->
 %% Reply = Path where Path = String
 create(Path, Data) ->
    gen_server:call(?SERVER, {command, {create, Path, Data, [], [undef]}}).
+n_create(Path, Data, Receiver, Tag) ->
+   gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, [], [undef]}, Receiver, Tag}).
 %% Typ = e | s | es (stands for etheremal, sequenzed or both)
 create(Path, Data, Typ) ->
    gen_server:call(?SERVER, {command, {create, Path, Data, Typ, [undef]}}).
+n_create(Path, Data, Typ, Receiver, Tag) ->
+   gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, Typ, [undef]}, Receiver, Tag}).
 %% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
 %% with Scheme and Id = String
 %% and Permission = [Per] | String 
@@ -177,7 +181,7 @@ handle_call({command, Args}, From, State) ->
     {ok, CommId, Path, Packet} = ezk_message_2_packet:make_packet(Args, Iteration),
     gen_tcp:send(State#cstate.socket, Packet),
     ?LOG(1, "Connection: Packet send"),
-    NewOpen  = dict:store(Iteration, {CommId, Path, From}, State#cstate.open_requests),
+    NewOpen  = dict:store(Iteration, {CommId, Path, {blocking, From}}, State#cstate.open_requests),
     ?LOG(3, "Connection: Saved open Request."),
     NewState = State#cstate{iteration = Iteration+1, open_requests = NewOpen },    
     ?LOG(3, "Connection: Returning to wait status"),  
@@ -220,10 +224,17 @@ handle_call({addauth, Scheme, Auth}, From, State) ->
 	    {noreply, NewState}
     end.
     
-
-%% useless
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast({nbcommand, Args, Receiver, Tag}, State) ->
+    Iteration = State#cstate.iteration,
+    {ok, CommId, Path, Packet} = ezk_message_2_packet:make_packet(Args, Iteration),
+    gen_tcp:send(State#cstate.socket, Packet),
+    ?LOG(1, "Connection: Packet send"),
+    NewOpen  = dict:store(Iteration, {CommId, Path, {nonblocking, Receiver, Tag}},
+			  State#cstate.open_requests),
+    ?LOG(3, "Connection: Saved open Request."),
+    NewState = State#cstate{iteration = Iteration+1, open_requests = NewOpen },    
+    ?LOG(3, "Connection: Returning to wait status"),  
+    {noreply, NewState}.
 
 %% tcp events arrive
 %% parses the first part of the message and determines of which type it is and then does
@@ -387,8 +398,13 @@ handle_typed_incomming_message({normal, MessId, _Zxid, PayloadWithErrorcode}, St
     Reply = ezk_packet_2_message:replymessage_2_reply(CommId, Path,
 						      PayloadWithErrorcode),
     ?LOG(3, "Connection: determinated reply"),
-    gen_server:reply(From, Reply),
     ok = inet:setopts(State#cstate.socket,[{active,once}]),
+    case From of
+	{blocking, PId} ->
+	    gen_server:reply(PId, Reply);
+	{nonblocking, ReceiverPId, Tag} ->
+	    ReceiverPId ! {Tag, Reply}
+    end,
     {noreply, NewState};
 %%% Answers to a addauth. 
 %%% if there is an errorcode then there wa an error. if not there wasn't

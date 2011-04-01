@@ -26,8 +26,10 @@
 
 %functions creating and deleting zkNodes
 -export([create/2, create/3, create/4, delete/1]).
+-export([n_create/4, n_create/5]).
 %functions dealing with node informations
 -export([set/2, get/1, ls/1, ls2/1, set_acl/2, get_acl/1]).
+-export([n_ls/3]).
 %functions dealing with watches
 -export([ls/3, get/3, ls2/3]).
 %macros
@@ -145,7 +147,7 @@ set_acl(Path, Acls) ->
 %% Reply = [ChildName] where ChildName = <<"Name">>
 ls(Path) ->
    ezk_connection:ls(Path).
-ls(Path, Receiver, Tag) ->
+n_ls(Path, Receiver, Tag) ->
    ezk_connection:ls(Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child

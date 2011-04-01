@@ -90,6 +90,7 @@ groups() ->
 	    || {Name, Para} <- LsCases ].
 
 all() ->
+    %% {skip, test}.
     [{group, N} || {N, _, _} <- groups()].
 
 ls_test(Config) ->

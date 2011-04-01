@@ -92,6 +92,7 @@ groups() ->
      || {Name, Para} <- RunCases ]. 
 
 all() -> 
+    %% {skip, test}.
     [{group, N} || {N, _, _} <- groups()].
 
 run_test(Config) ->

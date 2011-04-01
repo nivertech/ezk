@@ -24,12 +24,12 @@
 
 -module(test_highlander_impl).
 
--export([start_link/2, run/4, terminate/2]).
+-export([start_link/3, run/4, terminate/2]).
 
 -behaviour(ezk_highlander).
 
-start_link(WaiterPId, I) ->
-    ezk_highlander:start_link("test", {test_highlander_impl, run, [WaiterPId, I]},1).
+start_link(WaiterPId, I, Number) ->
+    ezk_highlander:start_link("test", {test_highlander_impl, run, [WaiterPId, I]}, Number).
 
 run(Id, Father, WaiterPId, I) ->
     io:format("The one is now ~w", [I]),

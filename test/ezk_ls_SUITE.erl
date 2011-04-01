@@ -28,12 +28,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -define(LS_RUNS, 50).
-
--define(LOG, ct_log:log).
--define(LOGSUITEINIT, ct_log:suite_init).
--define(LOGSUITEEND, ct_log:suite_end).
--define(LOGGROUPINIT, ct_log:group_init).
--define(LOGGROUPEND, ct_log:group_end).
+-define(PAR_RUNS, 900).
 
 suite() ->
     [{timetrap,{seconds,700}}].
@@ -41,36 +36,17 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
-    ezk:delete_all("/"),
-    {ok, StartIter} = ezk:info_get_iterations(),
-    ?LOGSUITEINIT("LS"),
-    [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].
+    Config.
 
-end_per_suite(Config) ->
-    FinishTime = erlang:now(),
-    {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
-    {suiteiter, StartIter} = lists:keyfind(suiteiter, 1, Config),
-    {ok, FinishIter} = ezk:info_get_iterations(),
-    Elapsed = timer:now_diff(FinishTime, StartTime),
-    Iter = FinishIter - StartIter,
-    ?LOGSUITEEND("LS",Elapsed, Iter),
+end_per_suite(_Config) ->
     application:stop(ezk),
     application:stop(sasl),
     ok.
 
 init_per_group(GroupName, Config) ->
-    ?LOGGROUPINIT(GroupName),
-    {ok, StartIter} = ezk:info_get_iterations(),
-    [{grouptime, erlang:now()} | [{groupiter, StartIter } | Config]].
+    Config.
 
 end_per_group(GroupName, Config) ->
-    FinishTime = erlang:now(),
-    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config), 
-    {groupiter, StartIter} = lists:keyfind(groupiter, 1, Config),
-    {ok, FinishIter} = ezk:info_get_iterations(),
-    Iter = FinishIter - StartIter,
-    Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGGROUPEND(GroupName, Elapsed, Iter),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -80,25 +56,29 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 groups() ->
-    LsCases = [{ls100,100},
-    	      {ls200,200},
-    	      {ls500,500},
-    	      {ls700,700},
-    	      {ls900,900}
-    	      ],
- [{Name, [parallel], [ls_test || _Id <- lists:seq(1,Para)]} 
-	    || {Name, Para} <- LsCases ].
+    [].
 
 all() ->
+    [ls1, ls5, ls10, ls50, ls75, ls100].
     %% {skip, test}.
-    [{group, N} || {N, _, _} <- groups()].
 
-ls_test(Config) ->
-   ok = ls_test(Config, ?LS_RUNS).
+ls1(_Config) -> parteststarter:start((?PAR_RUNS div 100),
+				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
+ls5(_Config) -> parteststarter:start((?PAR_RUNS div 20), 
+				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
+ls10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
+				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
+ls50(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
+				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
+ls75(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
+				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
+ls100(_Config) -> parteststarter:start((?PAR_RUNS), 
+				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
 
-ls_test(_Config, 0) ->
+
+ls_test(0) ->
     ok;
-ls_test(Config, N) ->
+ls_test(N) ->
     {ok, _E} = ezk:ls("/"),
-    ls_test(Config, N-1).
+    ls_test(N-1).
 

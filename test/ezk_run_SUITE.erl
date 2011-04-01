@@ -29,50 +29,27 @@
 -include_lib("common_test/include/ct.hrl").
 -define(RUN_ROUNDS,25).
 -define(DATALENGTH, 8).
+-define(PAR_RUNS, 900).
 
--define(LOG, ct_log:log).
--define(LOGSUITEINIT, ct_log:suite_init).
--define(LOGSUITEEND, ct_log:suite_end).
--define(LOGGROUPINIT, ct_log:group_init).
--define(LOGGROUPEND, ct_log:group_end).
-
+-export([run_test/1]).
 
 suite() ->
     [{timetrap,{seconds,1000}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
-    application:start(sasl),  
-    ezk:delete_all("/"),
-    {ok, StartIter} = ezk:info_get_iterations(),
-    ?LOGSUITEINIT("RUN"),
-    [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].
+    application:start(sasl),
+    Config.
 
-end_per_suite(Config) ->
-    FinishTime = erlang:now(),
-    {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
-    {suiteiter, StartIter} = lists:keyfind(suiteiter, 1, Config),
-    {ok, FinishIter} = ezk:info_get_iterations(),
-    Elapsed = timer:now_diff(FinishTime, StartTime),
-    Iter = FinishIter - StartIter,
-    ?LOGSUITEEND("RUN",Elapsed, Iter),
+end_per_suite(_Config) ->
     application:stop(ezk),
     application:stop(sasl),
     ok.
 
 init_per_group(GroupName, Config) ->
-    ?LOGGROUPINIT(GroupName),
-    {ok, StartIter} = ezk:info_get_iterations(),
-    [{grouptime, erlang:now()} | [{groupiter, StartIter } | Config]].
+    Config.
 
 end_per_group(GroupName, Config) ->
-    FinishTime = erlang:now(),
-    {grouptime, StartTime} = lists:keyfind(grouptime, 1, Config),  
-    {groupiter, StartIter} = lists:keyfind(groupiter, 1, Config),
-    {ok, FinishIter} = ezk:info_get_iterations(),
-    Iter = FinishIter - StartIter,
-    Elapsed = timer:now_diff(FinishTime, StartTime),
-    ?LOGGROUPEND(GroupName, Elapsed, Iter),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -82,30 +59,43 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 groups() ->
-    RunCases = [{run100,100},
-		{run200,200},
-		{run500,500},
-		{run700,700},
-		{run900,900}
-	       ],
-    [{Name, [parallel], [run_test || _Id <- lists:seq(1,Para)]} 
-     || {Name, Para} <- RunCases ]. 
+    [].
 
-all() -> 
+all() ->
+    [rt1, rt5, rt10, rt50, rt75, rt100].
     %% {skip, test}.
-    [{group, N} || {N, _, _} <- groups()].
 
-run_test(Config) ->
-    ok = run_test(Config, ?RUN_ROUNDS).
-run_test(_Config, Cycles) ->
+rt1(_Config) -> parteststarter:start((?PAR_RUNS div 100), 
+				     ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+rt5(_Config) -> parteststarter:start((?PAR_RUNS div 20),
+				     ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+rt10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
+				      ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+rt50(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
+				      ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+rt75(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
+				      ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+rt100(_Config) -> parteststarter:start((?PAR_RUNS), 
+				       ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+
+run_test(Cycles) ->
+    io:format("Start ~w with ~w cycles",[self(), Cycles]),
     List  = sequenzed_create("/run_multi",Cycles,[]),
+    io:format("test data  ~w with ~w cycles",[self(), Cycles]),
     ok    = test_data(List),
+    io:format("change data  ~w with ~w cycles",[self(), Cycles]),
     List2 = change_data(List,[]),
+    io:format("test data again  ~w with ~w cycles",[self(), Cycles]),
     ok    = test_data(List2),    
+    io:format("set watch ~w with ~w cycles",[self(), Cycles]),
     ok    = set_watch_and_test( List2),
+    io:format("spawn changer ~w with ~w cycles",[self(), Cycles]),
     spawn(fun() -> change_data(List2, []) end),
+    io:format("wait for watch ~w with ~w cycles",[self(), Cycles]),
     ok    = wait_watches(List2),
-    ok    = sequenzed_delete(List2).
+    io:format("delete all nodes  ~w with ~w cycles",[self(), Cycles]),
+    ok    = sequenzed_delete(List2),
+    io:format("finished ~w with ~w cycles",[self(), Cycles]).
     
 wait_watches([]) ->
     ok;

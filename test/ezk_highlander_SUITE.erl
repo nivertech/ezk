@@ -34,29 +34,25 @@
 -define(LOGSUITEEND, ct_log:suite_end).
 -define(LOGGROUPINIT, ct_log:group_init).
 -define(LOGGROUPEND, ct_log:group_end).
+
 -define(HIGHIMPL, test_highlander_impl:start_link).
--define(HIGH2NUMBER,20).
+
+-define(HIGH_SERVER, 30).
+-define(HIGH_RANDOM_RANGE, 100).
+-define(HIGH2_SERVER, 100).
+-define(HIGH2_NUMBER,20).
+-define(HIGH2_SLEEP_SEND_THRESHOLD,60000).
+-define(HIGH2_RANDOM_RANGE, 100000).
 
 suite() ->
     [{timetrap,{seconds,2000}}].
 
 init_per_suite(Config) ->
-    random:seed(erlang:now()),
     application:start(ezk),
     application:start(sasl),
-    ezk:delete_all("/"),
-    {ok, StartIter} = ezk:info_get_iterations(),
-    ?LOGSUITEINIT("HIGHLANDER"),
-    [{suitetime, erlang:now()} |  [{suiteiter, StartIter}  | Config]].
+    Config.
 
 end_per_suite(Config) ->
-    FinishTime = erlang:now(),
-    {suitetime, StartTime} = lists:keyfind(suitetime, 1, Config), 
-    {suiteiter, StartIter} = lists:keyfind(suiteiter, 1, Config),
-    {ok, FinishIter} = ezk:info_get_iterations(),
-    Elapsed = timer:now_diff(FinishTime, StartTime),
-    Iter = FinishIter - StartIter,
-    ?LOGSUITEEND("HIGHLANDER",Elapsed, Iter),
     application:stop(ezk),
     application:stop(sasl),
     ok.
@@ -80,7 +76,7 @@ all() ->
     [high_test, high2_test].
 
 high_test(_Config) ->
-    Paras = [20],
+    Paras = [?HIGH_SERVER],
     lists:map(
       fun(I) -> high_tester(I) end, Paras),
     ok.
@@ -98,7 +94,7 @@ high_wait(Dict, I) ->
 	{init, PId, N, FatherPId} ->
 	    io:format("Starting with highlaner number ~w~n",[N]),
 	    NewDict = dict:erase(FatherPId, Dict),
-	    Cycles  = random:uniform(80),
+	    Cycles  = random:uniform(?HIGH_RANDOM_RANGE),
 	    io:format("Doing ~w rounds with Node ~w", [Cycles, N]),
 	    ok      = send_receive_n(PId, Cycles),
 	    ezk_highlander:failover(FatherPId, "test"),
@@ -110,14 +106,14 @@ high_wait(Dict, I) ->
 %% ---------------------------- high 2 test------------------------
 
 high2_test(_Config) ->
-    Paras = [100],
+    Paras = [?HIGH2_SERVER],
     lists:map(
       fun(I) -> high2_tester(I) end, Paras),
     ok.
     
 high2_tester(I) ->
-    Dict = spawn_list_highlander(self(), dict:new(), I, ?HIGH2NUMBER),
-    ok = high2_wait(Dict, I, ?HIGH2NUMBER).
+    Dict = spawn_list_highlander(self(), dict:new(), I, ?HIGH2_NUMBER),
+    ok = high2_wait(Dict, I, ?HIGH2_NUMBER).
 
 high2_wait(_Dict, 0, _) ->
     ok;
@@ -129,7 +125,7 @@ high2_wait(Dict, Left, FreeSlots) ->
 	    if
 		FreeSlots > 0 ->
 		    Self = self(),
-		    Cycles  = random:uniform(100000),
+		    Cycles  = random:uniform(?HIGH2_RANDOM_RANGE),
 		    io:format("Doing ~w rounds with Node ~w", [Cycles, Number]),	    
 		    spawn(fun() -> receiver2(PId, Self, FatherPId, Number, Cycles) end),
 		    NewDict = dict:erase(FatherPId, Dict),
@@ -147,7 +143,7 @@ high2_wait(Dict, Left, FreeSlots) ->
 
 receiver2(Child, Caller, Father, Number, Cycles) ->
     if 
-	Cycles > 60000 ->
+	Cycles > ?HIGH2_SLEEP_SEND_THRESHOLD ->
 	    ok = send_receive_n(Child, Cycles);
 	true ->
 	    timer:sleep(Cycles)

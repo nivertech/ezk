@@ -34,13 +34,12 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3, addauth/2]).
 %normal functions
--export([create/2,   create/3,  create/4, delete/1, set/2, set_acl/2]).
--export([n_create/4, n_create/5]).
--export([get/1, get_acl/1, ls2/1, ls/1, die/1]).
--export([n_ls/3]).
+-export([  create/2,   create/3,   create/4,   delete/1,   set/2,   set_acl/2]).
+-export([n_create/4, n_create/5, n_create/6, n_delete/3, n_set/4, n_set_acl/4]).
+-export([  get/1,   get_acl/1,   ls2/1,   ls/1, die/1]).
+-export([n_get/3, n_get_acl/3, n_ls2/3, n_ls/3]).
 %functions dealing with watches
 -export([ls/3, get/3, ls2/3]).
--export([n_ls/3]).
 %macros
 -export([delete_all/1]).
 %infos

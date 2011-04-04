@@ -25,11 +25,11 @@
 -module(ezk).
 
 %functions creating and deleting zkNodes
--export([create/2, create/3, create/4, delete/1]).
--export([n_create/4, n_create/5]).
+-export([  create/2,   create/3,   create/4,   delete/1]).
+-export([n_create/4, n_create/5, n_create/6, n_delete/3]).
 %functions dealing with node informations
--export([set/2, get/1, ls/1, ls2/1, set_acl/2, get_acl/1]).
--export([n_ls/3]).
+-export([  set/2,   get/1,   ls/1,   ls2/1,   set_acl/2,   get_acl/1]).
+-export([n_set/4, n_get/3, n_ls/3, n_ls2/3, n_set_acl/4, n_get_acl/3]).
 %functions dealing with watches
 -export([ls/3, get/3, ls2/3]).
 %macros
@@ -102,12 +102,16 @@ n_create(Path, Data, Typ, Receiver, Tag) ->
 %% where Per = r | w | c | d | a
 create(Path, Data, Typ, Acls)  ->
    ezk_connection:create(Path, Data, Typ, Acls).
+n_create(Path, Data, Typ, Acls, Receiver, Tag)  ->
+   ezk_connection:n_create(Path, Data, Typ, Acls, Receiver, Tag).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.
 %% Reply = Path where Path = String
 delete(Path) ->
     ezk_connection:delete(Path).
+n_delete(Path, Receiver, Tag) ->
+    ezk_connection:n_delete(Path, Receiver, Tag).
 
 %% Deletes a ZK_Node and all his childs.
 %% Reply = Path where Path = String
@@ -120,6 +124,8 @@ delete_all(Path) ->
 %%                       datalength | number_children | cversion | aclversion
 get(Path) ->
     ezk_connection:get(Path).
+n_get(Path, Receiver, Tag) ->
+    ezk_connection:n_get(Path, Receiver, Tag).
    
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
@@ -132,17 +138,24 @@ get(Path, WatchOwner, WatchMessage) ->
 %% Reply = {[ACL],Parameters} with ACl and Parameters like above
 get_acl(Path) ->
     ezk_connection:get_acl(Path).
+n_get_acl(Path, Receiver, Tag) ->
+    ezk_connection:n_get_acl(Path, Receiver, Tag).
 
 %% Sets new Data in a Node. Old ones are lost.
 %% Reply = Parameters with Data like at get
 set(Path, Data) ->
    ezk_connection:set(Path, Data).
+n_set(Path, Data, Receiver, Tag) ->
+   ezk_connection:n_set(Path, Data, Receiver, Tag).
 
 %% Sets new Acls in a Node. Old ones are lost.
 %% ACL like above.
 %% Reply = Parameters with Data like at get
 set_acl(Path, Acls) ->
     ezk_connection:set_acl(Path, Acls).
+n_set_acl(Path, Acls, Receiver, Tag) ->
+    ezk_connection:n_set_acl(Path, Acls, Receiver, Tag).
+
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = [ChildName] where ChildName = <<"Name">>
 ls(Path) ->
@@ -158,6 +171,8 @@ ls(Path, WatchOwner, WatchMessage) ->
 %% Reply = {[ChildName],Parameters} with Parameters and ChildName like above.
 ls2(Path) ->
    ezk_connection:ls2(Path).
+n_ls2(Path, Receiver, Tag) ->
+   ezk_connection:n_ls2(Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls2(Path, WatchOwner, WatchMessage) ->

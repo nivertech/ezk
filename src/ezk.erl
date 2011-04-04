@@ -33,7 +33,7 @@
 %functions dealing with watches
 -export([ls/3, get/3, ls2/3]).
 %macros
--export([delete_all/1]).
+-export([delete_all/1, ensure_path/1]).
 %infos
 -export([info_get_iterations/0,  help/0]).
 %Stop commands (forcing Client to choose a new random Server from List)
@@ -110,6 +110,9 @@ create(Path, Data, Typ, Acls)  ->
    ezk_connection:create(Path, Data, Typ, Acls).
 n_create(Path, Data, Typ, Acls, Receiver, Tag)  ->
    ezk_connection:n_create(Path, Data, Typ, Acls, Receiver, Tag).
+
+ensure_path(Path) ->
+    ezk_connection:ensure_path(Path).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.

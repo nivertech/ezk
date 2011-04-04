@@ -41,9 +41,11 @@
 %functions dealing with watches
 -export([ls/3, get/3, ls2/3]).
 %macros
--export([delete_all/1]).
+-export([delete_all/1, ensure_path/1]).
 %infos
 -export([info_get_iterations/0]).
+
+-export([get_prefix_paths/1]).
 
 -include_lib("../include/ezk.hrl").
 
@@ -99,6 +101,9 @@ create(Path, Data, Typ, Acls)  ->
    gen_server:call(?SERVER, {command, {create, Path, Data, Typ, Acls}}).
 n_create(Path, Data, Typ, Acls, Receiver, Tag)  ->
    gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, Typ, Acls}, Receiver, Tag}).
+
+ensure_path(Path) ->
+    macro_ensure_path(Path).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.
@@ -315,6 +320,29 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 	    ets:delete(Table, Key),
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
     end.       
+
+macro_ensure_path(Path) ->
+    FolderList = string:tokens(Path, "/"),
+    PrefixPaths = get_prefix_paths(FolderList),
+    lists:map(fun(Folder) -> ensure_folder(Folder) end, PrefixPaths),
+    ls(Path).
+
+get_prefix_paths([]) ->
+    [];
+get_prefix_paths([ Head | Tail]) ->
+    PrefixTails = get_prefix_paths(Tail),
+    HeadedPrefixTails = lists:map(fun(PathTail) ->
+					   ("/"++ Head++ PathTail) end, PrefixTails),
+    ["/" ++ Head | HeadedPrefixTails].
+
+	      
+ensure_folder(PrefixPath) ->
+    case ls(PrefixPath) of
+	{ok, _I} ->
+	    ok;
+	{error, _I} ->
+	    create(PrefixPath, "Created by ensure_path macro")
+    end.
 
 %% A Macro which deletes a Node and all his Childs.
 %% a) List children of Node. If he has none everything is all right.

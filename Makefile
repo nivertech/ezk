@@ -6,8 +6,14 @@ ZK_DIR=zookeeper-${ZK_VERSION}
 
 compile:
 
+conf_local:
+	cp -f ./local_ezk.app.src ./src/ezk.app.src
+
+conf_extern: 
+	cp -f ./extern_ezk.app.src ./src/ezk.app.src
+
 ## Hudson's continuous integration rule
-ci: clean compile test
+ci: clean conf_local compile test
 
 ## compile test release
 

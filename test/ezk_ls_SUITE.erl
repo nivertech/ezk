@@ -28,7 +28,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -define(LS_RUNS, 50).
--define(PAR_RUNS, 900).
+-define(PAR_RUNS, 300).
 
 suite() ->
     [{timetrap,{seconds,700}}].
@@ -59,7 +59,8 @@ groups() ->
     [].
 
 all() ->
-    [ls1, ls5, ls10, ls50, ls75, ls100].
+    [ ls1,  ls5,  ls10,  ls20,  ls50,  ls100,
+     nls1, nls5, nls10, nls20, nls50, nls100].
     %% {skip, test}.
 
 ls1(_Config) -> parteststarter:start((?PAR_RUNS div 100),
@@ -68,13 +69,25 @@ ls5(_Config) -> parteststarter:start((?PAR_RUNS div 20),
 				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
 ls10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
 				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls50(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
+ls20(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
 				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls75(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
+ls50(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
 				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
 ls100(_Config) -> parteststarter:start((?PAR_RUNS), 
 				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
 
+nls1(_Config) -> parteststarter:start((?PAR_RUNS div 100),
+				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
+nls5(_Config) -> parteststarter:start((?PAR_RUNS div 20), 
+				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
+nls10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
+				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
+nls20(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
+				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
+nls50(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
+				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
+nls100(_Config) -> parteststarter:start((?PAR_RUNS), 
+				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
 
 ls_test(0) ->
     ok;
@@ -82,3 +95,32 @@ ls_test(N) ->
     {ok, _E} = ezk:ls("/"),
     ls_test(N-1).
 
+nls_test(N) ->
+    Self = self(),
+    io:format("starting receiverchild with ~w Rounds",[N]),
+    K = spawn(fun() ->
+		      receive_ls(N, Self) end),
+    io:format("starting to send"),
+    send_ls(N, K),
+    io:format("all send"),
+    receive
+	all_ls_received ->
+	    ok
+    end.
+
+send_ls(0, _Child) ->
+    ok;
+send_ls(N, Child) ->
+    ezk:n_ls("/", Child, ls),
+    send_ls(N-1, Child).
+
+
+receive_ls(0, Father) ->
+    Father ! all_ls_received,
+    ok;
+receive_ls(N, Father) ->
+    receive
+	{ls, {ok, _I}} ->
+	    io:format("got one ~w", [self()]),
+	    receive_ls(N-1, Father)
+    end.

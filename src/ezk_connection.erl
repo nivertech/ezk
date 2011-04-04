@@ -149,7 +149,7 @@ set_acl(Path, Acls) ->
 ls(Path) ->
    gen_server:call(?SERVER, {command, {ls, Path}}).
 n_ls(Path, Receiver, Tag) ->
-   gen_server:call(?SERVER, {nbcommand, {ls, Path}, Receiver, Tag}).
+   gen_server:cast(?SERVER, {nbcommand, {ls, Path}, Receiver, Tag}).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls(Path, WatchOwner, WatchMessage) ->

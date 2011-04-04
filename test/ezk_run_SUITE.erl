@@ -62,8 +62,8 @@ groups() ->
     [].
 
 all() ->
-    [rt1, rt5, rt10, rt50, rt75, rt100].
-    %% {skip, test}.
+    %% [rt1, rt5, rt10, rt50, rt75, rt100].
+    {skip, test}.
 
 rt1(_Config) -> parteststarter:start((?PAR_RUNS div 100), 
 				     ezk_run_SUITE, run_test, [?RUN_ROUNDS]).

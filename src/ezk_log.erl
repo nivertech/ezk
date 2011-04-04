@@ -24,7 +24,7 @@
 
 -module(ezk_log).
 -export([put/3, put/2]).
--define(LEVEL,0).
+-define(LEVEL,3).
 %% 0: nothing
 %% 1: important things
 %% 2: also sequenzer things

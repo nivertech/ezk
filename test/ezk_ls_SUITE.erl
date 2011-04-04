@@ -28,7 +28,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -define(LS_RUNS, 50).
--define(PAR_RUNS, 300).
+-define(PAR_RUNS, 200).
 
 suite() ->
     [{timetrap,{seconds,700}}].
@@ -122,5 +122,7 @@ receive_ls(N, Father) ->
     receive
 	{ls, {ok, _I}} ->
 	    io:format("got one ~w", [self()]),
-	    receive_ls(N-1, Father)
+	    receive_ls(N-1, Father);
+	Else  ->
+	    io:format("I got Something: ~w ~n",[Else])		
     end.

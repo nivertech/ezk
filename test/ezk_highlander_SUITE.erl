@@ -37,7 +37,7 @@
 
 -define(HIGHIMPL, test_highlander_impl:start_link).
 
--define(HIGH_SERVER, 30).
+-define(HIGH_SERVER, 20).
 -define(HIGH_RANDOM_RANGE, 100).
 -define(HIGH2_SERVER, 100).
 -define(HIGH2_NUMBER,20).

@@ -98,12 +98,16 @@ n_create(Path, Data, Typ, Receiver, Tag) ->
 %% where Per = r | w | c | d | a
 create(Path, Data, Typ, Acls)  ->
    gen_server:call(?SERVER, {command, {create, Path, Data, Typ, Acls}}).
+n_create(Path, Data, Typ, Acls, Receiver, Tag)  ->
+   gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, Typ, Acls}, Receiver, Tag}).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.
 %% Reply = Path where Path = String
 delete(Path) ->
    gen_server:call(?SERVER, {command, {delete,  Path, []}}).
+n_delete(Path, Receiver, Tag) ->
+   gen_server:cast(?SERVER, {nbcommand, {delete,  Path, []}, Receiver, Tag}).
 
 %% Deletes a ZK_Node and all his childs.
 %% Reply = Path where Path = String
@@ -120,6 +124,8 @@ delete_all(Path) ->
 %%                       datalength | number_children | cversion | aclversion
 get(Path) ->
    gen_server:call(?SERVER, {command, {get, Path}}).
+n_get(Path, Receiver, Tag) ->
+   gen_server:cast(?SERVER, {command, {get, Path}, Receiver, Tag}).
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
 %% M = {WatchMessage, {Path, Type, SyncCon}
@@ -132,17 +138,23 @@ get(Path, WatchOwner, WatchMessage) ->
 %% Reply = {[ACL],Parameters} with ACl and Parameters like above
 get_acl(Path) ->
     gen_server:call(?SERVER, {command, {get_acl, Path}}).
+n_get_acl(Path, Receiver, Tag) ->
+    gen_server:cast(?SERVER, {command, {get_acl, Path}, Receiver, Tag}).
 
 %% Sets new Data in a Node. Old ones are lost.
 %% Reply = Parameters with Data like at get
 set(Path, Data) ->
    gen_server:call(?SERVER, {command, {set, Path, Data}}).
+n_set(Path, Data, Receiver, Tag) ->
+   gen_server:cast(?SERVER, {command, {set, Path, Data}, Receiver, Tag}).
 
 %% Sets new Acls in a Node. Old ones are lost.
 %% ACL like above.
 %% Reply = Parameters with Data like at get
 set_acl(Path, Acls) ->
     gen_server:call(?SERVER, {command, {set_acl, Path, Acls}}).
+n_set_acl(Path, Acls, Receiver, Tag) ->
+    gen_server:cast(?SERVER, {command, {set_acl, Path, Acls}, Receiver, Tag}).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = [ChildName] where ChildName = <<"Name">>
@@ -161,6 +173,8 @@ ls(Path, WatchOwner, WatchMessage) ->
 %% Reply = {[ChildName],Parameters} with Parameters and ChildName like above.
 ls2(Path) ->
    gen_server:call(?SERVER, {command, {ls2, Path}}).
+n_ls2(Path, Receiver, Tag) ->
+   gen_server:cast(?SERVER, {command, {ls2, Path}, Receiver, Tag}).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls2(Path, WatchOwner, WatchMessage) ->

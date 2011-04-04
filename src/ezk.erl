@@ -93,7 +93,7 @@ n_create(Path, Data, Receiver, Tag) ->
 create(Path, Data, Typ) ->
     ezk_connection:create(Path, Data, Typ).
 n_create(Path, Data, Typ, Receiver, Tag) ->
-    ezk_connection:create(Path, Data, Typ, Receiver, Tag).
+    ezk_connection:n_create(Path, Data, Typ, Receiver, Tag).
 
 
 %% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
@@ -148,7 +148,7 @@ set_acl(Path, Acls) ->
 ls(Path) ->
    ezk_connection:ls(Path).
 n_ls(Path, Receiver, Tag) ->
-   ezk_connection:ls(Path, Receiver, Tag).
+   ezk_connection:n_ls(Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls(Path, WatchOwner, WatchMessage) ->
@@ -161,7 +161,7 @@ ls2(Path) ->
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls2(Path, WatchOwner, WatchMessage) ->
-    ezk_connection:ls2(Path, WatchOwner, WatchMessage).
+    ezk_connection:n_ls2(Path, WatchOwner, WatchMessage).
 
 %% Returns the Actual Transaction Id of the Client.
 %% Reply = Iteration = Int.

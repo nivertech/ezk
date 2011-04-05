@@ -24,22 +24,28 @@
 
 -module(test_highlander_impl).
 
--export([start_link/3, run/4, terminate/2]).
+-export([start_link/2, run/3, terminate/2]).
 
 -behaviour(ezk_highlander).
 
-start_link(WaiterPId, I, Number) ->
-    ezk_highlander:start_link("test", {test_highlander_impl, run, [WaiterPId, I]}, Number).
+start_link(ButlerPId, Number) ->
+    Numbers = lists:seq(1,Number),
+    Paths = lists:map(fun(Num) -> ("/highlander/test/node" ++ [Num+48]) end, Numbers),
+    %%io:format("Spawn with Paths ~s",[Paths]),
+    Ergo = ezk_highlander:start(test_highlander_impl, [ButlerPId], Paths),
+    %%io:format("Result of spawning is ~w",[Ergo]),
+    Ergo.
 
-run(Id, Father, WaiterPId, I) ->
-    io:format("The one is now ~w", [I]),
-    WaiterPId ! {init, self(), I, Father},
+
+run(Father, Path, [ButlerPId]) ->
+    io:format("~w is now father of the one.",[Father]),
+    ButlerPId ! {init, self(), path, Father},
     loop().
 
 loop() ->
     receive
-	{ping, WaiterPId} ->
-	    WaiterPId ! {pong, self()},
+	{ping, PingPongPId} ->
+	    PingPongPId ! {pong, self()},
 	    loop();
 	die -> 
 	    ok

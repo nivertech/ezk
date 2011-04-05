@@ -27,7 +27,7 @@
 -define(LEVEL,0).
 %% 0: nothing
 %% 1: important things
-%% 2: also sequenzer things
+%% 2: even more things
 %% 3: most things
 %% 4: also heartbeats
 

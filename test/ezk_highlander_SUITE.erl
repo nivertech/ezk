@@ -52,7 +52,7 @@ init_per_suite(Config) ->
     application:start(sasl),
     Config.
 
-end_per_suite(Config) ->
+end_per_suite(_Config) ->
     application:stop(ezk),
     application:stop(sasl),
     ok.
@@ -73,7 +73,9 @@ groups() ->
     [].
 
 all() -> 
-    [high_test, high2_test].
+    [high_test
+     , high2_test
+    ].
 
 high_test(_Config) ->
     Paras = [?HIGH_SERVER],
@@ -83,7 +85,7 @@ high_test(_Config) ->
 
 high_tester(I) ->
     io:format("Start testing with ~w highlanderwannabes~n",[I]),
-    Dict = spawn_list_highlander(self(), dict:new(), I, 1),
+    Dict = spawn_list_highlander(self(), dict:new(), 1, I),
     ok = high_wait(Dict, I),
     io:format("Test finished~n").
 
@@ -91,14 +93,14 @@ high_wait(_Dict, 0) ->
     ok;
 high_wait(Dict, I) ->
     receive 
-	{init, PId, N, FatherPId} ->
-	    io:format("Starting with highlaner number ~w~n",[N]),
+	{init, PId, _Path, FatherPId} ->
+	    io:format("Starting with highlaner pid ~w",[PId]),
 	    NewDict = dict:erase(FatherPId, Dict),
 	    Cycles  = random:uniform(?HIGH_RANDOM_RANGE),
-	    io:format("Doing ~w rounds with Node ~w", [Cycles, N]),
+	    io:format("Doing ~w rounds with Node ~w", [Cycles, PId]),
 	    ok      = send_receive_n(PId, Cycles),
 	    ezk_highlander:failover(FatherPId, "test"),
-	    io:format("Finished with highlaner number ~w~n",[N]),
+	    io:format("Finished with highlaner number ~w~n",[PId]),
 	    high_wait(NewDict,I-1)
     end.
 
@@ -112,43 +114,44 @@ high2_test(_Config) ->
     ok.
     
 high2_tester(I) ->
-    Dict = spawn_list_highlander(self(), dict:new(), I, ?HIGH2_NUMBER),
+    Dict = spawn_list_highlander(self(), dict:new(), ?HIGH2_NUMBER, I),
     ok = high2_wait(Dict, I, ?HIGH2_NUMBER).
 
 high2_wait(_Dict, 0, _) ->
     ok;
 high2_wait(Dict, Left, FreeSlots) ->
     receive
-	{init, PId, Number, FatherPId} ->
-	    io:format("Starting with highlaner number ~w and afterwards ~w Slots left",
-		      [Number, FreeSlots-1]),
+	{init, PId, Path, FatherPId} ->
+	    io:format("Starting with highlander number ~s, afterwards ~w Slots left" ++
+			  "and ~w instances waiting to get Highlanders",
+		      [Path, FreeSlots-1, Left-1]),
 	    if
 		FreeSlots > 0 ->
 		    Self = self(),
 		    Cycles  = random:uniform(?HIGH2_RANDOM_RANGE),
-		    io:format("Doing ~w rounds with Node ~w", [Cycles, Number]),	    
-		    spawn(fun() -> receiver2(PId, Self, FatherPId, Number, Cycles) end),
+		    io:format("Doing ~w rounds with Node ~s", [Cycles, Path]),	    
+		    spawn(fun() -> receiver2(PId, Self, FatherPId, Path, Cycles) end),
 		    NewDict = dict:erase(FatherPId, Dict),
 		    high2_wait(NewDict, Left-1, FreeSlots-1);
 		true ->
 		    error_logger:error_msg("To many Highlanders")
 	    end;
-	{ended, FatherPId, Number} ->
-	    io:format("Finished with highlaner number ~w and now ~w Slots left",
-		      [Number, FreeSlots+1]),
+	{ended, FatherPId, Path} ->
+	    io:format("Finished with highlaner on path ~s and now ~w Slots left~n",
+		      [Path, FreeSlots+1]),
 	    ezk_highlander:failover(FatherPId, "test"),
 	    high2_wait(Dict, Left, FreeSlots+1)
     end.
 	    
 
-receiver2(Child, Caller, Father, Number, Cycles) ->
+receiver2(Child, Caller, Father, Path, Cycles) ->
     if 
 	Cycles > ?HIGH2_SLEEP_SEND_THRESHOLD ->
 	    ok = send_receive_n(Child, Cycles);
 	true ->
 	    timer:sleep(Cycles)
     end,
-    Caller ! {ended, Father, Number}.
+    Caller ! {ended, Father, Path}.
     
 
 
@@ -165,12 +168,12 @@ send_receive_n(PId, Cycles) ->
     end.
 
 
-spawn_list_highlander(_Waiter, Dict, 0, _Number) ->
+spawn_list_highlander(_Butler, Dict, _Number, 0) ->
     Dict;
-spawn_list_highlander(Waiter, Dict, I, Number) ->
-    {ok, NewPId} = ?HIGHIMPL(Waiter, I, Number),
-    io:format("Spawned ~w with pid ~w~n",[I, NewPId]),
-    spawn_list_highlander(Waiter, dict:append(NewPId, I, Dict), I-1, Number).
+spawn_list_highlander(Butler, Dict, Number, I) ->
+    {ok, FatherPId} = ?HIGHIMPL(Butler, Number),    
+    io:format("Spawned Number ~w with pid ~w",[I, FatherPId]),
+    spawn_list_highlander(Butler, dict:append(FatherPId, I, Dict), Number, I-1).
 
     
 		      

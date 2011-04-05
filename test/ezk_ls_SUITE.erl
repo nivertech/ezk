@@ -28,7 +28,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -define(LS_RUNS, 50).
--define(PAR_RUNS, 200).
+-define(PAR_RUNS, 350).
 
 suite() ->
     [{timetrap,{seconds,700}}].
@@ -60,8 +60,8 @@ groups() ->
 
 all() ->
     [ ls1,  ls5,  ls10,  ls20,  ls50,  ls100,
-     nls1, nls5, nls10, nls20, nls50, nls100].
-    %% {skip, test}.
+    nls1, nls5, nls10, nls20, nls50, nls100].
+     %% {skip, test}.
 
 ls1(_Config) -> parteststarter:start((?PAR_RUNS div 100),
 				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).

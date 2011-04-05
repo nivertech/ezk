@@ -157,7 +157,7 @@ handle_info({{nodechanged, Path}, _I}, State) ->
 		%% If we do not win the race we go back to start.
 		{error, _I1} ->
 		    ?LOG(1,"~w was not lucky in retry", [self()]),
-		    {noreply, State};
+		    {noreply, State}
 	    end
     end;
 %% This message is comming if the node got the one. 

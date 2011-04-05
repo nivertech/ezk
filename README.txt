@@ -28,6 +28,13 @@ to the given PId. Its similar to the usage of watches.
 The n_ commands are not fully tested and therefor marked as 
 experimental. Commands which set watches are not already 
 available in a n_ version.
+Using the n_ versions you have to be a little aware of the load.
+If you have 1000 processes which send 1000 ls requests to the 
+server there is not a problem and the server has to deal  
+with at most 1000 messages at one time. But if you use the
+n_ls there is 1.000.000 messages which may all arive before
+it can answer even the first. This may lead to a delay in 
+answering.
 
 
 -------------------------------------------------

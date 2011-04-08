@@ -28,33 +28,21 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1]).
+-export([start/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-	 terminate/2, code_change/3, addauth/2]).
-%normal functions
--export([  create/2,   create/3,   create/4,   delete/1,   set/2,   set_acl/2]).
--export([n_create/4, n_create/5, n_create/6, n_delete/3, n_set/4, n_set_acl/4]).
--export([  get/1,   get_acl/1,   ls2/1,   ls/1, die/1]).
--export([n_get/3, n_get_acl/3, n_ls2/3, n_ls/3]).
-%functions dealing with watches
--export([ls/3, get/3, ls2/3]).
-%macros
--export([delete_all/1, ensure_path/1]).
-%infos
--export([info_get_iterations/0]).
+	 terminate/2, code_change/3]).
 
--export([get_prefix_paths/1]).
 
 -include_lib("../include/ezk.hrl").
 
 -define(SERVER, ?MODULE). 
 -define(HEARTBEATTIME, 10000).
 
-start_link(Args) ->
+start(Args) ->
     ?LOG(1,"Connection: Start link called with Args: ~w",[Args]),
-    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
+    gen_server:start(?MODULE, Args, []).
 
 
 %% inits the random function and chooeses a Server from the list.
@@ -67,128 +55,7 @@ init(Servers) ->
     ?LOG(0,"Choose server ~w",[WhichServer]),
     {Ip, Port, WantedTimeout} =  lists:nth(WhichServer, Servers),
     establish_connection(Ip, Port, WantedTimeout).
-    
-%% Kills the Server (not the supervisor!)
-die(Reason) -> 
-    gen_server:call(?SERVER, {exit, Reason}).
 
-%%--------------------------- Zookeeper Functions ---------------------
-%% All Return {ok, Reply} if it worked.
-
-%% Reply = authed 
-%% Returns {error, auth_in_progress}  if the authslot is already in use.
-%% Returns {error, auth_failed} if server rejected auth
-%% Returns {error, unknown, ErrorCodeBin} if something new happened
-addauth(Scheme, Auth) ->
-   gen_server:call(?SERVER, {addauth, Scheme, Auth}).
-
-%% Creates a new ZK_Node
-%% Reply = Path where Path = String
-create(Path, Data) ->
-   gen_server:call(?SERVER, {command, {create, Path, Data, [], [undef]}}).
-n_create(Path, Data, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, [], [undef]}, Receiver, Tag}).
-%% Typ = e | s | es (stands for etheremal, sequenzed or both)
-create(Path, Data, Typ) ->
-   gen_server:call(?SERVER, {command, {create, Path, Data, Typ, [undef]}}).
-n_create(Path, Data, Typ, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, Typ, [undef]}, Receiver, Tag}).
-%% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
-%% with Scheme and Id = String
-%% and Permission = [Per] | String 
-%% where Per = r | w | c | d | a
-create(Path, Data, Typ, Acls)  ->
-   gen_server:call(?SERVER, {command, {create, Path, Data, Typ, Acls}}).
-n_create(Path, Data, Typ, Acls, Receiver, Tag)  ->
-   gen_server:cast(?SERVER, {nbcommand, {create, Path, Data, Typ, Acls}, Receiver, Tag}).
-
-ensure_path(Path) ->
-    macro_ensure_path(Path).
-
-%% Deletes a ZK_Node
-%% Only working if Node has no children.
-%% Reply = Path where Path = String
-delete(Path) ->
-   gen_server:call(?SERVER, {command, {delete,  Path, []}}).
-n_delete(Path, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {nbcommand, {delete,  Path, []}, Receiver, Tag}).
-
-%% Deletes a ZK_Node and all his childs.
-%% Reply = Path where Path = String
-%% If deleting some nodes violates the acl
-%% or gets other errors the function tries the
-%% other nodes befor giving the error back, so a 
-%% maximum number of nodes is deleted.
-delete_all(Path) ->
-   macro_delete_all_childs(Path).    
-
-%% Reply = {Data, Parameters} where Data = The Data stored in the Node
-%% and Parameters = [{ParameterName, Value}]
-%% where ParameterName = czxid | mzxid | pzxid | ctime | mtime | dataversion | 
-%%                       datalength | number_children | cversion | aclversion
-get(Path) ->
-   gen_server:call(?SERVER, {command, {get, Path}}).
-n_get(Path, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {command, {get, Path}, Receiver, Tag}).
-%% Like the one above but sets a datawatch to Path.
-%% If watch is triggered a Message M is send to the PId WatchOwner
-%% M = {WatchMessage, {Path, Type, SyncCon}
-%% with Type = child
-get(Path, WatchOwner, WatchMessage) ->
-    gen_server:call(?SERVER, {watchcommand, {get, getw, Path, {data, WatchOwner,
-							       WatchMessage}}}).
-
-%% Returns the actual Acls of a Node
-%% Reply = {[ACL],Parameters} with ACl and Parameters like above
-get_acl(Path) ->
-    gen_server:call(?SERVER, {command, {get_acl, Path}}).
-n_get_acl(Path, Receiver, Tag) ->
-    gen_server:cast(?SERVER, {command, {get_acl, Path}, Receiver, Tag}).
-
-%% Sets new Data in a Node. Old ones are lost.
-%% Reply = Parameters with Data like at get
-set(Path, Data) ->
-   gen_server:call(?SERVER, {command, {set, Path, Data}}).
-n_set(Path, Data, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {command, {set, Path, Data}, Receiver, Tag}).
-
-%% Sets new Acls in a Node. Old ones are lost.
-%% ACL like above.
-%% Reply = Parameters with Data like at get
-set_acl(Path, Acls) ->
-    gen_server:call(?SERVER, {command, {set_acl, Path, Acls}}).
-n_set_acl(Path, Acls, Receiver, Tag) ->
-    gen_server:cast(?SERVER, {command, {set_acl, Path, Acls}, Receiver, Tag}).
-
-%% Lists all Children of a Node. Paths are given as Binarys!
-%% Reply = [ChildName] where ChildName = <<"Name">>
-ls(Path) ->
-   gen_server:call(?SERVER, {command, {ls, Path}}).
-n_ls(Path, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {nbcommand, {ls, Path}, Receiver, Tag}).
-%% like above, but a Childwatch is set to the Node. 
-%% Same Reaktion like at get with watch but Type = child
-ls(Path, WatchOwner, WatchMessage) ->
-    ?LOG(3,"Connection: Send lsw"),
-    gen_server:call(?SERVER, {watchcommand, {ls, lsw,  Path, {child, WatchOwner, 
-							      WatchMessage}}}).
-
-%% Lists all Children of a Node. Paths are given as Binarys!
-%% Reply = {[ChildName],Parameters} with Parameters and ChildName like above.
-ls2(Path) ->
-   gen_server:call(?SERVER, {command, {ls2, Path}}).
-n_ls2(Path, Receiver, Tag) ->
-   gen_server:cast(?SERVER, {command, {ls2, Path}, Receiver, Tag}).
-%% like above, but a Childwatch is set to the Node. 
-%% Same Reaktion like at get with watch but Type = child
-ls2(Path, WatchOwner, WatchMessage) ->
-    gen_server:call(?SERVER, {watchcommand, {ls2, ls2w, Path ,{child, WatchOwner, 
-							       WatchMessage}}}).
-
-%% Returns the Actual Transaction Id of the Client.
-%% Reply = Iteration = Int.
-info_get_iterations() ->
-    gen_server:call(?SERVER, {info, get_iterations}).
 
 %% Handles calls for Number of Iteration
 handle_call({info, get_iterations}, _From, State) ->
@@ -259,7 +126,6 @@ handle_cast({nbcommand, Args, Receiver, Tag}, State) ->
     NewState = State#cstate{iteration = Iteration+1, open_requests = NewOpen },    
     ?LOG(3, "Connection: Returning to wait status"),  
     {noreply, NewState}.
-
 %% tcp events arrive
 %% parses the first part of the message and determines of which type it is and then does
 %% the corresponding (see below).
@@ -268,7 +134,6 @@ handle_info({tcp, _Port, Info}, State) ->
     TypedMessage = ezk_packet_2_message:get_message_typ(Info), 
     ?LOG(3, "Connection: Typedmessage is ~w",[TypedMessage]),     
     handle_typed_incomming_message(TypedMessage, State);
-
 %% Its time to let the Heart bump one more time
 handle_info(heartbeat, State) ->
     case State#cstate.outstanding_heartbeats of
@@ -283,7 +148,7 @@ handle_info(heartbeat, State) ->
 	    {noreply, NewState};
 	%% Last bump got no reply. Thats bad.
         _Else ->
-	    die("Heartattack")
+	    ezk:die("Heartattack")
     end.
 
 %% if server dies all owners who are waiting for watchevents get a Message
@@ -320,60 +185,8 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
             WatchOwner ! {WatchMessage, {Path, Typ, SyncCon}},
 	    ets:delete(Table, Key),
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
-    end.       
+    end.  
 
-macro_ensure_path(Path) ->
-    FolderList = string:tokens(Path, "/"),
-    PrefixPaths = get_prefix_paths(FolderList),
-    lists:map(fun(Folder) -> ensure_folder(Folder) end, PrefixPaths),
-    ls(Path).
-
-get_prefix_paths([]) ->
-    [];
-get_prefix_paths([ Head | Tail]) ->
-    PrefixTails = get_prefix_paths(Tail),
-    HeadedPrefixTails = lists:map(fun(PathTail) ->
-					   ("/"++ Head++ PathTail) end, PrefixTails),
-    ["/" ++ Head | HeadedPrefixTails].
-
-	      
-ensure_folder(PrefixPath) ->
-    case ls(PrefixPath) of
-	{ok, _I} ->
-	    ok;
-	{error, _I} ->
-	    create(PrefixPath, "Created by ensure_path macro")
-    end.
-
-%% A Macro which deletes a Node and all his Childs.
-%% a) List children of Node. If he has none everything is all right.
-%% b) If he has some: kill them and their Children rekursively.
-%% c) Kill the Node with delete
-macro_delete_all_childs(Path) ->
-    ?LOG(3, "Delete All: Trying to Erase ~s",[Path]),
-    Childs = ls(Path),
-    case Childs of
-        {ok, []} ->
-	    ?LOG(3, "Killing ~s",[Path]),
-	    delete(Path);
-	{ok, ListOfChilds} ->
-	    ?LOG(3, "Delete All: List of Childs: ~s",[ListOfChilds]),
-            case Path of
-		"/" ->
-		    lists:map(fun(A) ->
-				      (delete_all(Path++(binary_to_list(A))))
-			      end, ListOfChilds);
-		_Else  -> 
-		    lists:map(fun(A) ->
-				      (delete_all(Path++"/"++(binary_to_list(A)))) 
-                              end, ListOfChilds)
-
-	    end,
-            ?LOG(3, "Killing ~s",[Path]),
-            delete(Path);
-	{error, Message} ->
-	    {error, Message}
-    end.
 
 %% Sets up a connection, performs the Handshake and saves the data to the initial State 
 establish_connection(Ip, Port, WantedTimeout) ->

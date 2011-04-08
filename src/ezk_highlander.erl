@@ -26,10 +26,8 @@
 
 -include_lib("../include/ezk.hrl").
  
--record(high_state, {is_active = false, ident, my_path, module, parameters,
-		     wait_for_active = [], module_state}).
-
 -behaviour(gen_server).
+
 
 -export([start/3, failover/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,

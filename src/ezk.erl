@@ -25,19 +25,19 @@
 -module(ezk).
 
 %functions creating and deleting zkNodes
--export([  create/2,   create/3,   create/4,   delete/1]).
--export([n_create/4, n_create/5, n_create/6, n_delete/3]).
+-export([  create/3,   create/4,   create/5,   delete/2]).
+-export([n_create/5, n_create/6, n_create/7, n_delete/4]).
 %functions dealing with node informations
--export([  set/2,   get/1,   ls/1,   ls2/1,   set_acl/2,   get_acl/1]).
--export([n_set/4, n_get/3, n_ls/3, n_ls2/3, n_set_acl/4, n_get_acl/3]).
+-export([  set/3,   get/2,   ls/2,   ls2/2,   set_acl/3,   get_acl/2]).
+-export([n_set/5, n_get/4, n_ls/4, n_ls2/4, n_set_acl/5, n_get_acl/4]).
 %functions dealing with watches
--export([ls/3, get/3, ls2/3]).
+-export([ls/4, get/4, ls2/4]).
 %macros
--export([delete_all/1, ensure_path/1]).
+-export([delete_all/2, ensure_path/2]).
 %infos
--export([info_get_iterations/0,  help/0]).
+-export([info_get_iterations/1,  help/0]).
 %Stop commands (forcing Client to choose a new random Server from List)
--export([die/0, die/1]).
+-export([die/1, die/2]).
 
 
 
@@ -90,111 +90,111 @@ help() ->
 
 %% Creates a new ZK_Node
 %% Reply = Path where Path = String
-create(Path, Data) ->
-     ezk_connection:create(Path, Data).
-n_create(Path, Data, Receiver, Tag) ->
-     ezk_connection:n_create(Path, Data, Receiver, Tag).
+create(ConnectionPId, Path, Data) ->
+     ezk_commands:create(ConnectionPId, Path, Data).
+n_create(ConnectionPId, Path, Data, Receiver, Tag) ->
+     ezk_commands:n_create(ConnectionPId, Path, Data, Receiver, Tag).
 
 %% Typ = e | s | es (stands for etheremal, sequenzed or both)
-create(Path, Data, Typ) ->
-    ezk_connection:create(Path, Data, Typ).
-n_create(Path, Data, Typ, Receiver, Tag) ->
-    ezk_connection:n_create(Path, Data, Typ, Receiver, Tag).
+create(ConnectionPId, Path, Data, Typ) ->
+    ezk_commands:create(ConnectionPId, Path, Data, Typ).
+n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag) ->
+    ezk_commands:n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag).
 
 
 %% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
 %% with Scheme and Id = String
 %% and Permission = [Per] | String 
 %% where Per = r | w | c | d | a
-create(Path, Data, Typ, Acls)  ->
-   ezk_connection:create(Path, Data, Typ, Acls).
-n_create(Path, Data, Typ, Acls, Receiver, Tag)  ->
-   ezk_connection:n_create(Path, Data, Typ, Acls, Receiver, Tag).
+create(ConnectionPId, Path, Data, Typ, Acls)  ->
+   ezk_commands:create(ConnectionPId, Path, Data, Typ, Acls).
+n_create(ConnectionPId, Path, Data, Typ, Acls, Receiver, Tag)  ->
+   ezk_commands:n_create(ConnectionPId, Path, Data, Typ, Acls, Receiver, Tag).
 
-ensure_path(Path) ->
-    ezk_connection:ensure_path(Path).
+ensure_path(ConnectionPId, Path) ->
+    ezk_commands:ensure_path(ConnectionPId, Path).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.
 %% Reply = Path where Path = String
-delete(Path) ->
-    ezk_connection:delete(Path).
-n_delete(Path, Receiver, Tag) ->
-    ezk_connection:n_delete(Path, Receiver, Tag).
+delete(ConnectionPId, Path) ->
+    ezk_commands:delete(ConnectionPId, Path).
+n_delete(ConnectionPId, Path, Receiver, Tag) ->
+    ezk_commands:n_delete(ConnectionPId, Path, Receiver, Tag).
 
 %% Deletes a ZK_Node and all his childs.
 %% Reply = Path where Path = String
-delete_all(Path) ->
-   ezk_connection:delete_all(Path).    
+delete_all(ConnectionPId, Path) ->
+   ezk_commands:delete_all(ConnectionPId, Path).    
 
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
 %% and Parameters = [{ParameterName, Value}]
 %% where ParameterName = czxid | mzxid | pzxid | ctime | mtime | dataversion | 
 %%                       datalength | number_children | cversion | aclversion
-get(Path) ->
-    ezk_connection:get(Path).
-n_get(Path, Receiver, Tag) ->
-    ezk_connection:n_get(Path, Receiver, Tag).
+get(ConnectionPId, Path) ->
+    ezk_commands:get(ConnectionPId, Path).
+n_get(ConnectionPId, Path, Receiver, Tag) ->
+    ezk_commands:n_get(ConnectionPId, Path, Receiver, Tag).
    
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
 %% M = {WatchMessage, {Path, Type, SyncCon}}
 %% with Type = child
-get(Path, WatchOwner, WatchMessage) ->
-    ezk_connection:get(Path, WatchOwner, WatchMessage).
+get(ConnectionPId, Path, WatchOwner, WatchMessage) ->
+    ezk_commands:get(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Returns the actual Acls of a Node
 %% Reply = {[ACL],Parameters} with ACl and Parameters like above
-get_acl(Path) ->
-    ezk_connection:get_acl(Path).
-n_get_acl(Path, Receiver, Tag) ->
-    ezk_connection:n_get_acl(Path, Receiver, Tag).
+get_acl(ConnectionPId, Path) ->
+    ezk_commands:get_acl(ConnectionPId, Path).
+n_get_acl(ConnectionPId, Path, Receiver, Tag) ->
+    ezk_commands:n_get_acl(ConnectionPId, Path, Receiver, Tag).
 
 %% Sets new Data in a Node. Old ones are lost.
 %% Reply = Parameters with Data like at get
-set(Path, Data) ->
-   ezk_connection:set(Path, Data).
-n_set(Path, Data, Receiver, Tag) ->
-   ezk_connection:n_set(Path, Data, Receiver, Tag).
+set(ConnectionPId, Path, Data) ->
+   ezk_commands:set(ConnectionPId, Path, Data).
+n_set(ConnectionPId, Path, Data, Receiver, Tag) ->
+   ezk_commands:n_set(ConnectionPId, Path, Data, Receiver, Tag).
 
 %% Sets new Acls in a Node. Old ones are lost.
 %% ACL like above.
 %% Reply = Parameters with Data like at get
-set_acl(Path, Acls) ->
-    ezk_connection:set_acl(Path, Acls).
-n_set_acl(Path, Acls, Receiver, Tag) ->
-    ezk_connection:n_set_acl(Path, Acls, Receiver, Tag).
+set_acl(ConnectionPId, Path, Acls) ->
+    ezk_commands:set_acl(ConnectionPId, Path, Acls).
+n_set_acl(ConnectionPId, Path, Acls, Receiver, Tag) ->
+    ezk_commands:n_set_acl(ConnectionPId, Path, Acls, Receiver, Tag).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = [ChildName] where ChildName = <<"Name">>
-ls(Path) ->
-   ezk_connection:ls(Path).
-n_ls(Path, Receiver, Tag) ->
-   ezk_connection:n_ls(Path, Receiver, Tag).
+ls(ConnectionPId, Path) ->
+   ezk_commands:ls(ConnectionPId, Path).
+n_ls(ConnectionPId, Path, Receiver, Tag) ->
+   ezk_commands:n_ls(ConnectionPId, Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
-ls(Path, WatchOwner, WatchMessage) ->
-    ezk_connection:ls(Path, WatchOwner, WatchMessage).
+ls(ConnectionPId, Path, WatchOwner, WatchMessage) ->
+    ezk_commands:ls(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = {[ChildName],Parameters} with Parameters and ChildName like above.
-ls2(Path) ->
-   ezk_connection:ls2(Path).
-n_ls2(Path, Receiver, Tag) ->
-   ezk_connection:n_ls2(Path, Receiver, Tag).
+ls2(ConnectionPId, Path) ->
+   ezk_commands:ls2(ConnectionPId, Path).
+n_ls2(ConnectionPId, Path, Receiver, Tag) ->
+   ezk_commands:n_ls2(ConnectionPId, Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
-ls2(Path, WatchOwner, WatchMessage) ->
-    ezk_connection:n_ls2(Path, WatchOwner, WatchMessage).
+ls2(ConnectionPId, Path, WatchOwner, WatchMessage) ->
+    ezk_commands:n_ls2(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Returns the Actual Transaction Id of the Client.
 %% Reply = Iteration = Int.
-info_get_iterations() ->
-    ezk_connection:info_get_iterations().
+info_get_iterations(ConnectionPId) ->
+    ezk_commands:info_get_iterations(ConnectionPId).
 
-die() ->
-    ezk_connection:die("No offence").
+die(ConnectionPId) ->
+    ezk:die(ConnectionPId, "No offence").
 
-die(Reason) ->
-    ezk_connection:die(Reason).
+die(ConnectionPId, Reason) ->
+    ezk_commands:die(ConnectionPId, Reason).
     

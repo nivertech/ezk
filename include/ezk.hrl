@@ -20,4 +20,18 @@
 		payload :: binary()
 	       }).
 
+-record(con_man_state, {defaultserverlist,
+		       connections,
+		       monitorings
+		       }).
+
+-record(high_state, {is_active = false,
+		     ident,
+		     my_path,
+		     module, 
+		     parameters,
+		     wait_for_active = [],
+		     module_state
+		    }).
+
 -endif.

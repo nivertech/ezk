@@ -51,8 +51,8 @@ init(Args) ->
     ?LOG(1,"args: ~w",[Args]),
     ?LOG(1,"Supervisor: making Childspec."),
 %%% The only child is the Connection.
-    Connection = ?CHILD(ezk_connection,worker,Args),
+    Connection = ?CHILD(ezk_connection_manager, worker, Args),
     ChildSpec = [Connection],
-    ?LOG(1,"Supervisor: done Childspec: ~w.",[ChildSpec]),
+    ?LOG(1,"Supervisor: done Childspec: ~w.", [ChildSpec]),
     {ok, { {one_for_one, 500, 10}, ChildSpec} }.
 

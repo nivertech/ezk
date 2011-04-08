@@ -24,7 +24,7 @@
 
 -module(test_highlander_impl).
 
--export([start_link/2, run/3, terminate/2]).
+-export([start_link/2, init/2, terminate/2]).
 
 -behaviour(ezk_highlander).
 
@@ -37,8 +37,14 @@ start_link(ButlerPId, Number) ->
     %% io:format("Result of spawning is ~w",[Ergo]),
     Ergo.
 
+init(_Path, [ButlerPId]) ->
+    Father = self(),
+    ChildPId = spawn(fun() ->
+			  run(Father, ButlerPId) end),
+    io:format("Child sucessfully spawned with pid ~w from ~w",[ChildPId, Father]),
+    _State = {ok,ChildPId}.
 
-run(Father, Path, [ButlerPId]) ->
+run(Father, ButlerPId) ->
     io:format("~w is now father of the one.",[Father]),
     ButlerPId ! {init, self(), path, Father},
     io:format("~w 's child is now entering the loop.",[Father]),
@@ -53,5 +59,6 @@ loop() ->
 	    ok
     end.
 
-terminate(PId, _I) ->
-    PId ! die.
+terminate(State, _Reason) ->
+    LoopPId = State,
+    LoopPId ! die.

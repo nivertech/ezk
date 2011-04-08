@@ -25,21 +25,21 @@
 -module(ezk_highlander).
 
 -include_lib("../include/ezk.hrl").
-
--record(high_state, {connected = false, ident, my_path, child_pid, module, parameters,
-		     wait_for_active = []}).
+ 
+-record(high_state, {is_active = false, ident, my_path, module, parameters,
+		     wait_for_active = [], module_state}).
 
 -behaviour(gen_server).
 
--export([start/3, get_child_id/1, failover/2]).
+-export([start/3, failover/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 -export([behaviour_info/1]).
--export([is_active/1, wait_until_active/1]).
+-export([is_active/1]).
 
 
 behaviour_info(callbacks) ->
-    [{terminate,2}, {run,3}].
+    [{terminate,2}, {init,2}].
 
 %% The startfunction.
 start(Module, Parameters, NodeList) ->
@@ -62,31 +62,22 @@ init([Module, Parameters, NodeList]) ->
     %% set initial state
     Ident = pid_to_list(self())++ " " ++ atom_to_list(node()),
     State = #high_state{ident = Ident, my_path = "", module = Module, 
-			parameters = Parameters, child_pid = 0},
+			parameters = Parameters,  module_state = false},
     %% first try to get highlander at every node
     case try_first(NodeList, Ident) of
 	no_luck ->
 	    {ok, State};
 	{ok, Path} ->
 	    ?LOG(1, "Highlander:  Init: ~w trying to start its child", [Ident]),
-	    {ok, ChildPid} = start_child(Module, Parameters, State),
+	    {ok, NewState} = start_init(Module, Parameters, 
+					State#high_state{my_path = Path}),
 	    ?LOG(1, "Highlander:  Init: ~w Child started", [Ident]),
-	    {ok, State#high_state{connected = true, my_path = Path, child_pid = ChildPid}}
+	    {ok, NewState#high_state{is_active = true}}
     end.
 
 %% Gives true or false, depending on if the instance has become a highlander.
 is_active(PId) ->
     gen_server:call(PId, isactive).
-
-%% Returns ok if the instance is an active highlander. If not the functions waits for 
-%% it to become one and then returns ok.
-wait_until_active(PId) ->
-    gen_server:call(PId, wait_until_active, infinity).
-
-%% Gives back {ok, PID} with the PId of the process started by the highlander 
-%% if there is one. If not it gives replys error.
-get_child_id(PId) ->
-    gen_server:call(PId, get_child_id).
 
 %% Triggers a stopping of the highlander.
 failover(PId, Reason) ->
@@ -97,74 +88,50 @@ failover(PId, Reason) ->
 %% and the itself.
 terminate(Reason, State) ->
     ?LOG(1, "Highlander: Failover  of ~w",[self()]),
-    ChildPId = State#high_state.child_pid,
     Module = State#high_state.module,
-    Module:terminate(ChildPId, Reason),
-    ezk:delete(State#high_state.my_path),
-    timer:sleep(2000),
-    erlang:exit(ChildPId, Reason),
-    exit(Reason).
+    Module:terminate(State#high_state.module_state, Reason),
+    %% if terminate already deleted the node it must not be deleted again.
+    Ident = State#high_state.ident,
+    case ezk:get(State#high_state.my_path) of
+	{ok,{Ident, _I}} ->
+	    ezk:delete(State#high_state.my_path);
+	_Else -> 
+	    ok
+    end,
+    timer:sleep(2000).
 
 %% Called by the failover function
 handle_call({failover, Reason}, _From, State) ->    
     {stop, Reason, ok, State};
-%% Called by the get_child_id function. Looks if the highlander is active and 
-%% if yes returns the started childs id.
-handle_call(get_child_id, _From, State) -> 
-    case State#high_state.connected of
-	true ->
-	    {reply, {ok, State#high_state.child_pid}, State};
-	false ->
-	    {reply, error, State}
-    end;
 %% Called by the is_active function.
 handle_call(isactive, _From, State) ->
-    {reply, State#high_state.connected, State};
-%% Called by the wait_until_active function. If active it returns immediately.
-%% If not it saves the waiters pid and let it wait until a connection triggers
-%% a message going to the handle_info block.
-handle_call(wait_until_active, From, State) ->
-    case State#high_state.connected of
-	true ->
-	    ok;
-	false ->
-	    NewWaiter = [From | State#high_state.wait_for_active],
-	    {noreply, State#high_state{wait_for_active = NewWaiter}}
-    end.
+    {reply, State#high_state.is_active, State}.
 
 %% If a watch is triggered this Message comes to the Highlander. 
 %% Path is the Path of the Node to make, not the one of the Father. 
-handle_info({{nodechanged, _Path}, _I}, #high_state{connected=true} = State) ->
-    %% IF the highlander is already connected we ignore this messages. 
+handle_info({{nodechanged, _Path}, _I}, #high_state{is_active=true} = State) ->
+    %% IF the highlander is already active  we ignore this messages. 
     %% This way we don't have to determine how many unused watches we left
     %% triggered and are save from miscalculations happening while doing so.
     ?LOG(1,"~w is already a highlander", [self()]),
     {noreply, State};
-handle_info({{nodechanged, Path}, _I}, #high_state{connected=false} = State) ->
+handle_info({{nodechanged, Path}, _I}, #high_state{is_active=false} = State) ->
     ?LOG(1," Highlander: nodechangenotify: ~w got one for ~s",[self(), Path]),
     %% if not active we try to get. 
     case try_to_get(Path, State#high_state.ident) of
-	%% If successful we can modify the State and start the child
+	%% If successful we can modify the State and trigger the init
 	{ok, Path} ->
 	    ?LOG(1,"~w was lucky in retry", [self()]),
 	    Module = State#high_state.module,
 	    Parameters = State#high_state.parameters,
-	    {ok, ChildPid} = start_child(Module, Parameters, State),
-	    NewState = State#high_state{connected = true, my_path = Path,
-					child_pid = ChildPid},
-	    {noreply, NewState};
+	    {ok, NewState} = start_init(Module, Parameters, 
+					State#high_state{my_path = Path}),
+	    {noreply, NewState#high_state{is_active = true}};
 	%% If we do not win the race we go back to start.
 	{error, _I1} ->
 	    ?LOG(1,"~w was not lucky in retry", [self()]),
 	    {noreply, State}
-    end;
-%% This message is comming if the node got the one. 
-%% It is there to allow a notification of the waiting_for_active processes.
-handle_info(got_active, State) ->
-    lists:map(fun(PId) ->
-		      gen_server:reply(PId, ok) end, State#high_state.wait_for_active),
-    NewState = State#high_state{wait_for_active = []},
-    {noreply, NewState}.
+    end.
 
 
 handle_cast(_A, State) ->
@@ -175,18 +142,13 @@ handle_cast(_A, State) ->
 %% The run function gets the information 
 %% a) who his father is, b) the highlander of which path it is
 %% and c) the parameters provided when start was called.
-start_child(Module, Parameters, State) ->
+start_init(Module, Parameters, State) ->
     ?LOG(1, "Highlander : start_child: Function called."),
-    Father = self(),
     Path   = State#high_state.my_path,
     ?LOG(1, "Highlander : start_child: Starting Child function run"),
-    %% {ok, HandlerState} = Module:run(Father, Path, Parameters),
-    %% ?LOG(1, "Highlander : Starting Child function run"),
-
-    Child  = spawn_link(Module, run ,[Father, Path,  Parameters]),
+    {ok, HandlerState} = Module:init(Path, Parameters),
     ?LOG(1, "Highlander : start_child: run is running"),
-    Father ! got_active,
-    {ok, Child}.
+    {ok, State#high_state{module_state = HandlerState}}.
 
 %% Makes a first try to get highlander on every path from the list.
 %% After this every fathernode  has a childwatch.

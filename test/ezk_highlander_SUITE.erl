@@ -99,6 +99,7 @@ high_wait(Dict, I) ->
 	    Cycles  = random:uniform(?HIGH_RANDOM_RANGE),
 	    io:format("Doing ~w rounds with Node ~w", [Cycles, PId]),
 	    ok      = send_receive_n(PId, Cycles),
+	    io:format("Killing Father ~w", [FatherPId]),
 	    ezk_highlander:failover(FatherPId, "test"),
 	    io:format("Finished with highlaner number ~w~n",[PId]),
 	    high_wait(NewDict,I-1)

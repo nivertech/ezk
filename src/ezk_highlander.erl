@@ -70,6 +70,7 @@ init([Module, Parameters, NodeList]) ->
 	{ok, Path} ->
 	    ?LOG(1, "Highlander:  Init: ~w trying to start its child", [Ident]),
 	    {ok, ChildPid} = start_child(Module, Parameters, State),
+	    ?LOG(1, "Highlander:  Init: ~w Child started", [Ident]),
 	    {ok, State#high_state{connected = true, my_path = Path, child_pid = ChildPid}}
     end.
 
@@ -133,32 +134,29 @@ handle_call(wait_until_active, From, State) ->
 
 %% If a watch is triggered this Message comes to the Highlander. 
 %% Path is the Path of the Node to make, not the one of the Father. 
-handle_info({{nodechanged, Path}, _I}, State) ->
+handle_info({{nodechanged, _Path}, _I}, #high_state{connected=true} = State) ->
+    %% IF the highlander is already connected we ignore this messages. 
+    %% This way we don't have to determine how many unused watches we left
+    %% triggered and are save from miscalculations happening while doing so.
+    ?LOG(1,"~w is already a highlander", [self()]),
+    {noreply, State};
+handle_info({{nodechanged, Path}, _I}, #high_state{connected=false} = State) ->
     ?LOG(1," Highlander: nodechangenotify: ~w got one for ~s",[self(), Path]),
-    case State#high_state.connected of
-	%% IF the highlander is already connected we ignore this messages. 
-	%% This way we don't have to determine how many unused watches we left
-	%% triggered and are save from miscalculations happening while doing so.
-	true ->
-	    ?LOG(1,"~w is already a highlander", [self()]),
-	    {noreply, State};
-	false ->
-	    %% if not active we try to get. 
-	    case (try_to_get(Path, State#high_state.ident)) of
-		%% If successful we can modify the State and start the child
-		{ok, Path} ->
-		    ?LOG(1,"~w was lucky in retry", [self()]),
-		    Module = State#high_state.module,
-		    Parameters = State#high_state.parameters,
-		    {ok, ChildPid} = start_child(Module, Parameters, State),
-		    NewState = State#high_state{connected = true, my_path = Path,
-						child_pid = ChildPid},
-		    {noreply, NewState};
-		%% If we do not win the race we go back to start.
-		{error, _I1} ->
-		    ?LOG(1,"~w was not lucky in retry", [self()]),
-		    {noreply, State}
-	    end
+    %% if not active we try to get. 
+    case try_to_get(Path, State#high_state.ident) of
+	%% If successful we can modify the State and start the child
+	{ok, Path} ->
+	    ?LOG(1,"~w was lucky in retry", [self()]),
+	    Module = State#high_state.module,
+	    Parameters = State#high_state.parameters,
+	    {ok, ChildPid} = start_child(Module, Parameters, State),
+	    NewState = State#high_state{connected = true, my_path = Path,
+					child_pid = ChildPid},
+	    {noreply, NewState};
+	%% If we do not win the race we go back to start.
+	{error, _I1} ->
+	    ?LOG(1,"~w was not lucky in retry", [self()]),
+	    {noreply, State}
     end;
 %% This message is comming if the node got the one. 
 %% It is there to allow a notification of the waiting_for_active processes.
@@ -178,9 +176,15 @@ handle_cast(_A, State) ->
 %% a) who his father is, b) the highlander of which path it is
 %% and c) the parameters provided when start was called.
 start_child(Module, Parameters, State) ->
+    ?LOG(1, "Highlander : start_child: Function called."),
     Father = self(),
     Path   = State#high_state.my_path,
+    ?LOG(1, "Highlander : start_child: Starting Child function run"),
+    %% {ok, HandlerState} = Module:run(Father, Path, Parameters),
+    %% ?LOG(1, "Highlander : Starting Child function run"),
+
     Child  = spawn_link(Module, run ,[Father, Path,  Parameters]),
+    ?LOG(1, "Highlander : start_child: run is running"),
     Father ! got_active,
     {ok, Child}.
 

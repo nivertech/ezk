@@ -68,10 +68,12 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
     ?LOG(1,"packet_2_message: Trying to Interpret payload: ~w", [PayloadWithErrorCode]),
     case PayloadWithErrorCode of
 	<<0,0,0,0,Payload/binary>> -> 
-	    ?LOG(1, "packet_2_message: Interpreting the payload with commid ~w and Path ~w"
-		 , [CommId, Path]),
+	    ?LOG(1
+		 ,"packet_2_message: Interpreting the payload ~w with commid ~w and Path ~w"
+		 ,[Payload, CommId, Path]),
             Replydata = interpret_reply_data(CommId, Path, Payload),
-	    Reply = {ok, Replydata};
+	    Reply = {ok, Replydata},
+	    ?LOG(1, "The Reply is ~w",[Reply]);
 	<<255,255,255,146,_Payload/binary>> ->
 	    Reply = {error, "Directory already exists!"};
 	<<255,255,255,154,_Payload/binary>> ->
@@ -87,11 +89,11 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
 
 %% There is a pattern matching on the command id and depending on the command id
 %% the Reply is interpreted. 
-%%% create --> Reply = The new Path  
+%%% create --> Reply = The new Path
 interpret_reply_data(1, _Path, Reply) ->
     <<LengthOfData:32, Data/binary>> = Reply,
     {ReplyPath, _Left} = split_binary(Data, LengthOfData),
-    binary_to_list(ReplyPath);
+    binary_to_list(ReplyPath); 
 %%% delete --> Reply = Nothing --> use the Path
 interpret_reply_data(2, Path, _Reply) ->
     Path;

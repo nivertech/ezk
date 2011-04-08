@@ -203,7 +203,8 @@ handle_call({command, Args}, From, State) ->
     Iteration = State#cstate.iteration,
     {ok, CommId, Path, Packet} = ezk_message_2_packet:make_packet(Args, Iteration),
     gen_tcp:send(State#cstate.socket, Packet),
-    ?LOG(1, "Connection: Packet send"),
+    ?LOG(1, "Connection: Packet send."),
+    ?LOG(1, "Connection: Command started by ~w.",[From]),
     NewOpen  = dict:store(Iteration, {CommId, Path, {blocking, From}}, State#cstate.open_requests),
     ?LOG(3, "Connection: Saved open Request."),
     NewState = State#cstate{iteration = Iteration+1, open_requests = NewOpen },    
@@ -263,7 +264,7 @@ handle_cast({nbcommand, Args, Receiver, Tag}, State) ->
 %% parses the first part of the message and determines of which type it is and then does
 %% the corresponding (see below).
 handle_info({tcp, _Port, Info}, State) ->
-    ?LOG(1, "Connection: Got a message from Server"), 
+    ?LOG(3, "Connection: Got a message from Server"), 
     TypedMessage = ezk_packet_2_message:get_message_typ(Info), 
     ?LOG(3, "Connection: Typedmessage is ~w",[TypedMessage]),     
     handle_typed_incomming_message(TypedMessage, State);
@@ -390,7 +391,7 @@ establish_connection(Ip, Port, WantedTimeout) ->
 	{tcp,Socket,Reply} ->
 	    ?LOG(3, "Connection: Handshake Reply there"),    
 	    <<RealTimeout:64, SessionId:64, 16:32, _Hash:128>> = Reply,
-	    Watchtable = ets:new(watchtable, [duplicate_bag, private]),
+	    Watchtable    = ets:new(watchtable, [duplicate_bag, private]),
 	    InitialState  = #cstate{  
 	      socket = Socket, ip = Ip, 
 	      port = Port, timeout = RealTimeout,
@@ -437,7 +438,7 @@ handle_typed_incomming_message({watchevent, Payload}, State) ->
 handle_typed_incomming_message({normal, MessId, _Zxid, PayloadWithErrorcode}, State) ->
     ?LOG(3, "Connection: Normal Message"),  
     {ok, {CommId, Path, From}}  = dict:find(MessId, State#cstate.open_requests),
-    ?LOG(3, "Connection: Found dictonary entry"),
+    ?LOG(1, "Connection: Found dictonary entry: CommId = ~w, Path = ~w, From = ~w",[CommId, Path, From]),
     NewDict = dict:erase(MessId, State#cstate.open_requests),
     NewState = State#cstate{open_requests = NewDict},
     ?LOG(3, "Connection: Dictionary updated"),
@@ -447,10 +448,12 @@ handle_typed_incomming_message({normal, MessId, _Zxid, PayloadWithErrorcode}, St
     ok = inet:setopts(State#cstate.socket,[{active,once}]),
     case From of
 	{blocking, PId} ->
+	    ?LOG(1, "Connection: Trying to send to ~w",[PId]),
 	    gen_server:reply(PId, Reply);
 	{nonblocking, ReceiverPId, Tag} ->
 	    ReceiverPId ! {Tag, Reply}
     end,
+    ?LOG(1, "Connection: Starting if in handle typed normal"),
     {noreply, NewState};
 %%% Answers to a addauth. 
 %%% if there is an errorcode then there wa an error. if not there wasn't
@@ -460,6 +463,7 @@ handle_typed_incomming_message({authreply, Errorcode}, State) ->
 	<<0,0,0,0>> ->
 	    Reply = {ok, authed};
 	<<255,255,255,141>> ->
+%% The first part of the Message determines the type
 	    Reply = {error, auth_failed};
 	Else  -> 
 	    Reply = {error, unknown, Else}

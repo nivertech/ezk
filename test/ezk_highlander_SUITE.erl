@@ -160,7 +160,6 @@ receiver2(Child, Caller, Father, Path, Cycles) ->
 send_receive_n(_PId, 0) ->
     ok;
 send_receive_n(PId, Cycles) ->
-    %%io:format("Doing a round ~w",[self()]),
     PId ! {ping, self()},
     receive 
 	{pong, PId} ->
@@ -171,6 +170,7 @@ send_receive_n(PId, Cycles) ->
 spawn_list_highlander(_Butler, Dict, _Number, 0) ->
     Dict;
 spawn_list_highlander(Butler, Dict, Number, I) ->
+    io:format("Trying to spawn number ~w",[I]),
     {ok, FatherPId} = ?HIGHIMPL(Butler, Number),    
     io:format("Spawned Number ~w with pid ~w",[I, FatherPId]),
     spawn_list_highlander(Butler, dict:append(FatherPId, I, Dict), Number, I-1).

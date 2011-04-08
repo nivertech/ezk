@@ -29,17 +29,19 @@
 -behaviour(ezk_highlander).
 
 start_link(ButlerPId, Number) ->
+    io:format("Try to start number ~w",[Number]),
     Numbers = lists:seq(1,Number),
     Paths = lists:map(fun(Num) -> ("/highlander/test/node" ++ [Num+48]) end, Numbers),
-    %%io:format("Spawn with Paths ~s",[Paths]),
+    %% io:format("Spawn with Paths ~s",[Paths]),
     Ergo = ezk_highlander:start(test_highlander_impl, [ButlerPId], Paths),
-    %%io:format("Result of spawning is ~w",[Ergo]),
+    %% io:format("Result of spawning is ~w",[Ergo]),
     Ergo.
 
 
 run(Father, Path, [ButlerPId]) ->
     io:format("~w is now father of the one.",[Father]),
     ButlerPId ! {init, self(), path, Father},
+    io:format("~w 's child is now entering the loop.",[Father]),
     loop().
 
 loop() ->

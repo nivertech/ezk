@@ -56,6 +56,15 @@ answering.
 - Zookeeper:
            A behaviour. For further information... scroll down.
 
+- Because the ezk is a application on it's own there are some
+           issues concerning the epheremal nodes. If a process
+           dies unexpected which hast set a epheremal node the
+	   node is not erased by zookeeper unless the process
+	   eas linked to ezk which then also dies and kills the 
+	   connection to the zookeeperserver. 
+	   --> Perhabs the ezk is refactored to allow every 
+	   process to get it's own ezk.
+
 
 -------------------------------------------------
 ||>    Things not included

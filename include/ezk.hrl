@@ -31,7 +31,8 @@
 		     module, 
 		     parameters,
 		     wait_for_active = [],
-		     module_state
+		     module_state,
+		     connection_pid
 		    }).
 
 -endif.

@@ -29,7 +29,7 @@
 -behaviour(gen_server).
 
 
--export([start/3, failover/2]).
+-export([start/4, failover/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 -export([behaviour_info/1]).
@@ -40,29 +40,30 @@ behaviour_info(callbacks) ->
     [{terminate,2}, {init,2}].
 
 %% The startfunction.
-start(Module, Parameters, NodeList) ->
-    gen_server:start( ?MODULE, [Module, Parameters, NodeList], []).
+start(ConnectionPId, Module, Parameters, NodeList) ->
+    gen_server:start( ?MODULE, [ConnectionPId, Module, Parameters, NodeList], []).
 
 
 %% The init function tryes every given path once and ensures that all
 %% needed ZK Nodes are there. After trying once without success it goes 
 %% into normal genserver state and waits for messages ( = changes in the important nodes)
 %% Return type is a record of type high_state, which is the State format in this Server.
-init([Module, Parameters, NodeList]) ->
+init([ConnectionPId, Module, Parameters, NodeList]) ->
     %% ensure the needed Paths
     ?LOG(1,"Highlander: Init: got parameters module, Para, NodeList: ~w, ~w, ~w",
 	 [Module, Parameters, NodeList]), 
     lists:map(fun(Path) ->
 		      Father = get_father(Path),
 		      ?LOG(1,"Highlander: erstelle Pfad ~s",[Father]),
-		      ezk:ensure_path(Father) 
+		      ezk:ensure_path(ConnectionPId, Father) 
 	      end, NodeList),
     %% set initial state
     Ident = pid_to_list(self())++ " " ++ atom_to_list(node()),
     State = #high_state{ident = Ident, my_path = "", module = Module, 
-			parameters = Parameters,  module_state = false},
+			parameters = Parameters,  module_state = false,
+		       connection_pid = ConnectionPId},
     %% first try to get highlander at every node
-    case try_first(NodeList, Ident) of
+    case try_first(ConnectionPId, NodeList, Ident) of
 	no_luck ->
 	    {ok, State};
 	{ok, Path} ->
@@ -90,9 +91,10 @@ terminate(Reason, State) ->
     Module:terminate(State#high_state.module_state, Reason),
     %% if terminate already deleted the node it must not be deleted again.
     Ident = State#high_state.ident,
-    case ezk:get(State#high_state.my_path) of
+    ConnectionPId = State#high_state.connection_pid,
+    case ezk:get(ConnectionPId, State#high_state.my_path) of
 	{ok,{Ident, _I}} ->
-	    ezk:delete(State#high_state.my_path);
+	    ezk:delete(ConnectionPId, State#high_state.my_path);
 	_Else -> 
 	    ok
     end,
@@ -116,7 +118,8 @@ handle_info({{nodechanged, _Path}, _I}, #high_state{is_active=true} = State) ->
 handle_info({{nodechanged, Path}, _I}, #high_state{is_active=false} = State) ->
     ?LOG(1," Highlander: nodechangenotify: ~w got one for ~s",[self(), Path]),
     %% if not active we try to get. 
-    case try_to_get(Path, State#high_state.ident) of
+    ConnectionPId = State#high_state.connection_pid,
+    case try_to_get(ConnectionPId, Path, State#high_state.ident) of
 	%% If successful we can modify the State and trigger the init
 	{ok, Path} ->
 	    ?LOG(1,"~w was lucky in retry", [self()]),
@@ -150,25 +153,25 @@ start_init(Module, Parameters, State) ->
 
 %% Makes a first try to get highlander on every path from the list.
 %% After this every fathernode  has a childwatch.
-try_first([], Ident) ->
+try_first(_ConnectionPId, [], Ident) ->
     ?LOG(1, "Highlander: First Try: ~s tried all without luck",[Ident]),
     no_luck;
-try_first([Node | NodeList] , Ident) ->
-    case (try_to_get(Node, Ident)) of
+try_first(ConnectionPId, [Node | NodeList] , Ident) ->
+    case (try_to_get(ConnectionPId, Node, Ident)) of
 	{ok, Path} ->
 	    ?LOG(1, "Highlander: First Try: ~s got lucky",[Ident]),
 	    {ok, Path};
 	{error, _I}  ->
-	    try_first(NodeList, Ident)
+	    try_first(ConnectionPId, NodeList, Ident)
     end.  
 
 %% Trys to create a the in Path specified node with data Ident.
 %% Also sets a childwatch to its father with message {nodechanged, Path}.
-try_to_get(Path, Ident) ->
+try_to_get(ConnectionPId, Path, Ident) ->
     Father = get_father(Path),
-    ezk:ls(Father, self(), {nodechanged, Path}),
+    ezk:ls(ConnectionPId, Father, self(), {nodechanged, Path}),
     ?LOG(1, "Highlander: Watch set by ~w",[self()]),
-    ezk:create(Path, Ident, e).
+    ezk:create(ConnectionPId, Path, Ident, e).
 
 %% gets the father's address by looking at the child's
 get_father(Path) ->

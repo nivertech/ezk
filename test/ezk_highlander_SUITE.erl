@@ -50,9 +50,12 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
-    Config.
+    {ok, ConnectionPId} = ezk:start_connection(),
+    [{connection_pid, ConnectionPId}  | Config].
 
-end_per_suite(_Config) ->
+end_per_suite(Config) ->
+    {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),
+    ezk:end_connection(ConnectionPId, "Test finished"),
     application:stop(ezk),
     application:stop(sasl),
     ok.
@@ -73,20 +76,18 @@ groups() ->
     [].
 
 all() -> 
-    {skip, test}.
-    %% [high_test
-    %%  , high2_test
-    %% ].
+    %% {skip, test}.
+    [high_test
+     , high2_test
+    ].
 
-high_test(_Config) ->
-    Paras = [?HIGH_SERVER],
-    lists:map(
-      fun(I) -> high_tester(I) end, Paras),
-    ok.
+high_test(Config) ->
+    {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),
+    high_tester(ConnectionPId, ?HIGH_SERVER).
 
-high_tester(I) ->
+high_tester(ConPId, I) ->
     io:format("Start testing with ~w highlanderwannabes~n",[I]),
-    Dict = spawn_list_highlander(self(), dict:new(), 1, I),
+    Dict = spawn_list_highlander(ConPId, self(), dict:new(), 1, I),
     ok = high_wait(Dict, I),
     io:format("Test finished~n").
 
@@ -109,14 +110,12 @@ high_wait(Dict, I) ->
 
 %% ---------------------------- high 2 test------------------------
 
-high2_test(_Config) ->
-    Paras = [?HIGH2_SERVER],
-    lists:map(
-      fun(I) -> high2_tester(I) end, Paras),
-    ok.
+high2_test(Config) ->
+    {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),
+    high2_tester(ConnectionPId, ?HIGH2_SERVER).
     
-high2_tester(I) ->
-    Dict = spawn_list_highlander(self(), dict:new(), ?HIGH2_NUMBER, I),
+high2_tester(ConnectionPId, I) ->
+    Dict = spawn_list_highlander(ConnectionPId, self(), dict:new(), ?HIGH2_NUMBER, I),
     ok = high2_wait(Dict, I, ?HIGH2_NUMBER).
 
 high2_wait(_Dict, 0, _) ->
@@ -169,13 +168,14 @@ send_receive_n(PId, Cycles) ->
     end.
 
 
-spawn_list_highlander(_Butler, Dict, _Number, 0) ->
+spawn_list_highlander(_ConnectionPId, _Butler, Dict, _Number, 0) ->
     Dict;
-spawn_list_highlander(Butler, Dict, Number, I) ->
+spawn_list_highlander(ConnectionPId, Butler, Dict, Number, I) ->
     io:format("Trying to spawn number ~w",[I]),
-    {ok, FatherPId} = ?HIGHIMPL(Butler, Number),    
+    {ok, FatherPId} = ?HIGHIMPL(ConnectionPId, Butler, Number),    
     io:format("Spawned Number ~w with pid ~w",[I, FatherPId]),
-    spawn_list_highlander(Butler, dict:append(FatherPId, I, Dict), Number, I-1).
+    spawn_list_highlander(ConnectionPId, Butler, dict:append(FatherPId, I, Dict),
+			  Number, I-1).
 
     
 		      

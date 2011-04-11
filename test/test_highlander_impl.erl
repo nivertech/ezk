@@ -24,16 +24,16 @@
 
 -module(test_highlander_impl).
 
--export([start_link/2, init/2, terminate/2]).
+-export([start_link/3, init/2, terminate/2]).
 
 -behaviour(ezk_highlander).
 
-start_link(ButlerPId, Number) ->
+start_link(ConnectionPId, ButlerPId, Number) ->
     io:format("Try to start number ~w",[Number]),
     Numbers = lists:seq(1,Number),
     Paths = lists:map(fun(Num) -> ("/highlander/test/node" ++ [Num+48]) end, Numbers),
     %% io:format("Spawn with Paths ~s",[Paths]),
-    Ergo = ezk_highlander:start(test_highlander_impl, [ButlerPId], Paths),
+    Ergo = ezk_highlander:start(ConnectionPId, test_highlander_impl, [ButlerPId], Paths),
     %% io:format("Result of spawning is ~w",[Ergo]),
     Ergo.
 

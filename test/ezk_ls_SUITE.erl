@@ -31,7 +31,7 @@
 -define(PAR_RUNS, 350).
 
 suite() ->
-    [{timetrap,{seconds,700}}].
+    [{timetrap,{seconds,15}}].
 
 init_per_suite(Config) ->
     application:start(ezk),

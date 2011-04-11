@@ -45,7 +45,7 @@
 -define(HIGH2_RANDOM_RANGE, 100000).
 
 suite() ->
-    [{timetrap,{seconds,2000}}].
+    [{timetrap,{seconds,300}}].
 
 init_per_suite(Config) ->
     application:start(ezk),

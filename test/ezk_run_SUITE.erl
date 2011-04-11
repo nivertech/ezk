@@ -33,7 +33,7 @@
 
 
 suite() ->
-    [{timetrap,{seconds,1000}}].
+    [{timetrap,{seconds,40}}].
 
 init_per_suite(Config) ->
     application:start(ezk),

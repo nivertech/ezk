@@ -114,7 +114,10 @@ handle_call({addauth, Scheme, Auth}, From, State) ->
 	    NewState = State#cstate{outstanding_auths = 1, open_requests = NewOpen },   
 	    {noreply, NewState}
     end.
-    
+%% handles non blocking commands
+%% the difference in handling compared with blocking commands is the prefix
+%% nonblocking in the open requests table which gets the server to answer with
+%% a normal message sending instead of the gen_server:reply command.
 handle_cast({nbcommand, Args, Receiver, Tag}, State) ->
     Iteration = State#cstate.iteration,
     {ok, CommId, Path, Packet} = ezk_message_2_packet:make_packet(Args, Iteration),

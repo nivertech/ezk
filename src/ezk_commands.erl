@@ -199,13 +199,15 @@ macro_delete_all_childs(ConnectionPId, Path) ->
 	    {error, Message}
     end.
 
-
+%% Gets a path and looks if the corresponding node exists. If
+%% not it is created (along with the whole path).
 macro_ensure_path(ConnectionPId, Path) ->
     FolderList = string:tokens(Path, "/"),
     PrefixPaths = get_prefix_paths(FolderList),
     lists:map(fun(Folder) -> ensure_folder(ConnectionPId, Folder) end, PrefixPaths),
     ls(ConnectionPId, Path).
 
+%% Determines the path to every Node on the way to a special node (all parents).
 get_prefix_paths([]) ->
     [];
 get_prefix_paths([ Head | Tail]) ->
@@ -214,7 +216,7 @@ get_prefix_paths([ Head | Tail]) ->
 					   ("/"++ Head++ PathTail) end, PrefixTails),
     ["/" ++ Head | HeadedPrefixTails].
 
-	      
+%% Ensures one single node exists. (parent node is expected to exist.	      
 ensure_folder(ConnectionPId, PrefixPath) ->
     case ls(ConnectionPId, PrefixPath) of
 	{ok, _I} ->

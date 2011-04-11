@@ -31,7 +31,6 @@
 -define(DATALENGTH, 8).
 -define(PAR_RUNS, 900).
 
--export([run_test/1]).
 
 suite() ->
     [{timetrap,{seconds,1000}}].
@@ -39,9 +38,12 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
-    Config.
+    {ok, ConnectionPId} = ezk:start_connection(),
+    [{connection_pid, ConnectionPId}  | Config].
 
-end_per_suite(_Config) ->
+end_per_suite(Config) ->
+    {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),
+    ezk:end_connection(ConnectionPId, "Test finished"),
     application:stop(ezk),
     application:stop(sasl),
     ok.
@@ -62,39 +64,51 @@ groups() ->
     [].
 
 all() ->
-    %% [rt1, rt5, rt10, rt50, rt75, rt100].
-     {skip, test}.
+     [rt1, rt5, rt10, rt50, rt75, rt100].
+     %% {skip, test}.
 
-rt1(_Config) -> parteststarter:start((?PAR_RUNS div 100), 
-				     ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
-rt5(_Config) -> parteststarter:start((?PAR_RUNS div 20),
-				     ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
-rt10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
-				      ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
-rt50(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
-				      ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
-rt75(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
-				      ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
-rt100(_Config) -> parteststarter:start((?PAR_RUNS), 
-				       ezk_run_SUITE, run_test, [?RUN_ROUNDS]).
+rt1(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 100), ezk_run_SUITE, run_test, 
+			 [?RUN_ROUNDS, ConPId]).
+rt5(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 20), ezk_run_SUITE, run_test,
+			 [?RUN_ROUNDS, ConPId]).
+rt10(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 10), ezk_run_SUITE, run_test,
+			 [?RUN_ROUNDS, ConPId]).
+rt50(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 5), ezk_run_SUITE, run_test, 
+			 [?RUN_ROUNDS, ConPId]).
+rt75(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 2), ezk_run_SUITE, run_test, 
+			 [?RUN_ROUNDS, ConPId]).
+rt100(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS), ezk_run_SUITE, run_test,
+			 [?RUN_ROUNDS, ConPId]).
 
-run_test(Cycles) ->
+run_test(Cycles, ConPId) ->
     io:format("Start ~w with ~w cycles",[self(), Cycles]),
-    List  = sequenzed_create("/run_multi",Cycles,[]),
+    List  = sequenzed_create(ConPId, "/run_multi",Cycles,[]),
     io:format("test data  ~w with ~w cycles",[self(), Cycles]),
-    ok    = test_data(List),
+    ok    = test_data(ConPId, List),
     io:format("change data  ~w with ~w cycles",[self(), Cycles]),
-    List2 = change_data(List,[]),
+    List2 = change_data(ConPId, List,[]),
     io:format("test data again  ~w with ~w cycles",[self(), Cycles]),
-    ok    = test_data(List2),    
+    ok    = test_data(ConPId, List2),    
     io:format("set watch ~w with ~w cycles",[self(), Cycles]),
-    ok    = set_watch_and_test( List2),
+    ok    = set_watch_and_test( ConPId, List2),
     io:format("spawn changer ~w with ~w cycles",[self(), Cycles]),
-    spawn(fun() -> change_data(List2, []) end),
+    spawn(fun() -> change_data(ConPId, List2, []) end),
     io:format("wait for watch ~w with ~w cycles",[self(), Cycles]),
     ok    = wait_watches(List2),
     io:format("delete all nodes  ~w with ~w cycles",[self(), Cycles]),
-    ok    = sequenzed_delete(List2),
+    ok    = sequenzed_delete(ConPId, List2),
     io:format("finished ~w with ~w cycles",[self(), Cycles]).
     
 wait_watches([]) ->
@@ -105,38 +119,38 @@ wait_watches([{Path, _Data} | Tail]) ->
 	    wait_watches(Tail)
     end.
     
-sequenzed_delete([]) ->
+sequenzed_delete(ConPId, []) ->
     ok;
-sequenzed_delete([{Path,_Data} | Tail]) ->
-    {ok, Path} = ezk:delete(Path),
-    sequenzed_delete(Tail).
+sequenzed_delete(ConPId, [{Path,_Data} | Tail]) ->
+    {ok, Path} = ezk:delete(ConPId, Path),
+    sequenzed_delete(ConPId, Tail).
 
-set_watch_and_test([])->
+set_watch_and_test(ConPId, [])->
     ok;
-set_watch_and_test([{Path,Data} | Tail]) ->
+set_watch_and_test(ConPId, [{Path,Data} | Tail]) ->
     Self = self(),
-    {ok, {Data, _I}} = ezk:get(Path, Self, {datawatch, Path}),
-    set_watch_and_test(Tail).
+    {ok, {Data, _I}} = ezk:get(ConPId, Path, Self, {datawatch, Path}),
+    set_watch_and_test(ConPId, Tail).
 
-change_data([], NewList) ->
+change_data(ConPId, [], NewList) ->
     NewList;
-change_data([{Path, _Data} | Tail], NewList) ->
+change_data(ConPId, [{Path, _Data} | Tail], NewList) ->
     NewData = stringmaker(?DATALENGTH),
-    {ok, _I} = ezk:set(Path, NewData),
-    change_data(Tail, [{Path, NewData} | NewList]).
+    {ok, _I} = ezk:set(ConPId, Path, NewData),
+    change_data(ConPId, Tail, [{Path, NewData} | NewList]).
 
-test_data([]) ->
+test_data(ConPId, []) ->
     ok;
-test_data([{Path, Data} | Tail]) ->
-    {ok, {Data, _I}} = ezk:get(Path),
-    test_data(Tail).
+test_data(ConPId, [{Path, Data} | Tail]) ->
+    {ok, {Data, _I}} = ezk:get(ConPId, Path),
+    test_data(ConPId, Tail).
 
-sequenzed_create(_Path, 0, List) ->
+sequenzed_create(ConPId, _Path, 0, List) ->
     List;
-sequenzed_create(Path, CyclesLeft, List) ->
+sequenzed_create(ConPId, Path, CyclesLeft, List) ->
     Data = stringmaker(?DATALENGTH),
-    {ok, Name} = ezk:create(Path, Data, s),
-    sequenzed_create(Path, CyclesLeft-1, [{Name, Data} | List]).
+    {ok, Name} = ezk:create(ConPId, Path, Data, s),
+    sequenzed_create(ConPId, Path, CyclesLeft-1, [{Name, Data} | List]).
 
 stringmaker(N) ->
     lists:seq(1,N).

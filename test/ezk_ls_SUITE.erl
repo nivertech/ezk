@@ -41,8 +41,6 @@ init_per_suite(Config) ->
 
 end_per_suite(Config) ->
     {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),
-    {ok, _E} = ezk:ls(ConnectionPId, "/"),
-    io:format("Connection is connected. Now killing it"),
     ezk:end_connection(ConnectionPId, "Test finished"),
     application:stop(ezk),
     application:stop(sasl),

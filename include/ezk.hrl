@@ -11,7 +11,8 @@
 		 iteration :: pos_integer(),
 		 outstanding_heartbeats = 0,
 		 outstanding_auths = 0,
-		 watchtable
+		 watchtable,
+		 heartbeattime
  	       }).
 
 -record(zkmsg, {cmd  :: watchevent | ls | create | delete | get | set,

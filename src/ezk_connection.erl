@@ -53,8 +53,8 @@ init(Servers) ->
     ?LOG(1,"Connect init : incomming args: ~w",[Servers]),
     WhichServer = random:uniform(length(Servers)),
     ?LOG(0,"Choose server ~w",[WhichServer]),
-    {Ip, Port, WantedTimeout} =  lists:nth(WhichServer, Servers),
-    establish_connection(Ip, Port, WantedTimeout).
+    {Ip, Port, WantedTimeout, HeartBeatTime} =  lists:nth(WhichServer, Servers),
+    establish_connection(Ip, Port, WantedTimeout, HeartBeatTime).
 
 
 %% Handles calls for Number of Iteration
@@ -147,7 +147,8 @@ handle_info(heartbeat, State) ->
             Heartbeat = << 255,255,255,254, 11:32>>,
 	    gen_tcp:send(State#cstate.socket, Heartbeat),
             NewState = State#cstate{outstanding_heartbeats = 1},
-	    erlang:send_after(?HEARTBEATTIME, self(), heartbeat),
+	    HeartBeatTime = State#cstate.heartbeattime,
+	    erlang:send_after(HeartBeatTime, self(), heartbeat),
 	    {noreply, NewState};
 	%% Last bump got no reply. Thats bad.
         _Else ->
@@ -192,7 +193,7 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 
 
 %% Sets up a connection, performs the Handshake and saves the data to the initial State 
-establish_connection(Ip, Port, WantedTimeout) ->
+establish_connection(Ip, Port, WantedTimeout, HeartBeatTime) ->
     ?LOG(1, "Connection: Server starting"),
     ?LOG(3, "Connection: IP: ~s , Port: ~w, Timeout: ~w.",[Ip,Port,WantedTimeout]),    
     {ok, Socket} = gen_tcp:connect(Ip,Port,[binary,{packet,4}]),
@@ -212,13 +213,13 @@ establish_connection(Ip, Port, WantedTimeout) ->
 	      socket = Socket, ip = Ip, 
 	      port = Port, timeout = RealTimeout,
 	      sessionid = SessionId, iteration = 1,
-	      watchtable = Watchtable},   
+	      watchtable = Watchtable, heartbeattime = HeartBeatTime},   
 	    ?LOG(3, "Connection: Initial state build"),         
 	    ok = inet:setopts(Socket,[{active,once}]),
 	    ?LOG(3, "Connection: Startup complete",[]),
 	    ?LOG(3, "Connection: Initial State : ~w",[InitialState])
     end,
-    erlang:send_after(?HEARTBEATTIME, self(), heartbeat),
+    erlang:send_after(HeartBeatTime, self(), heartbeat),
     ?LOG(3,"Connection established with server ~s, ~w ~n",[Ip, Port]),
     {ok, InitialState}.
 

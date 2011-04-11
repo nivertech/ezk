@@ -39,6 +39,8 @@
 %Stop commands (forcing Client to choose a new random Server from List)
 -export([die/1, die/2]).
 
+-export([start_connection/0, start_connection/1, end_connection/2]).
+
 
 
 help() ->
@@ -198,3 +200,11 @@ die(ConnectionPId) ->
 die(ConnectionPId, Reason) ->
     ezk_commands:die(ConnectionPId, Reason).
     
+start_connection() ->
+    ezk_connection_manager:start_connection().
+    
+start_connection(Servers) ->
+    ezk_connection_manager:start_connection(Servers).
+    
+end_connection(ConnectionPId, Reason) ->
+    ezk_connection_manager:end_connection(ConnectionPId, Reason).

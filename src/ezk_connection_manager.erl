@@ -36,7 +36,7 @@
 
 -include_lib("../include/ezk.hrl").
 
--define(SERVER,?MODULE).
+-define(SERVER, ?MODULE).
 
 start_link(Args) ->
     gen_server:start_link({local,?SERVER}, ?MODULE, Args, []).
@@ -52,6 +52,7 @@ start_connection(Servers) ->
     gen_server:call(?SERVER, {start_connection, Servers}).
 
 end_connection(ConnectionPId, Reason) ->
+    ?LOG(3, "Connection manager: Sending endconn message to myself"),
     gen_server:call(?SERVER, {end_connection, ConnectionPId, Reason}).
 
 handle_call({start_connection, Servers}, _From, State) ->
@@ -67,6 +68,7 @@ handle_call({start_connection, Servers}, _From, State) ->
     NewState            = State#con_man_state{connections = NewConnectionList},
     {reply, {ok, ConnectionPId} , NewState};
 handle_call({end_connection, ConnectionPId, Reason},  _From, State) ->
+    ?LOG(3, "COnnection manager: got the endcon message."),
     ezk:die(ConnectionPId, Reason),
     {reply, ok, State}.
 

@@ -36,9 +36,14 @@ suite() ->
 init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
-    Config.
+    {ok, ConnectionPId} = ezk:start_connection(),
+    [{connection_pid, ConnectionPId}  | Config].
 
-end_per_suite(_Config) ->
+end_per_suite(Config) ->
+    {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),
+    {ok, _E} = ezk:ls(ConnectionPId, "/"),
+    io:format("Connection is connected. Now killing it"),
+    ezk:end_connection(ConnectionPId, "Test finished"),
     application:stop(ezk),
     application:stop(sasl),
     ok.
@@ -63,56 +68,69 @@ all() ->
     nls1, nls5, nls10, nls20, nls50, nls100].
      %% {skip, test}.
 
-ls1(_Config) -> parteststarter:start((?PAR_RUNS div 100),
-				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls5(_Config) -> parteststarter:start((?PAR_RUNS div 20), 
-				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
-				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls20(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
-				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls50(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
-				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
-ls100(_Config) -> parteststarter:start((?PAR_RUNS), 
-				       ezk_ls_SUITE, ls_test, [?LS_RUNS]).
+ls1(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    io:format("Starting test with ConPid ~w",[ConPId]),
+    parteststarter:start((?PAR_RUNS div 100), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
+ls5(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 20), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
+ls10(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 10), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
+ls20(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 5), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
+ls50(Config) ->
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+     parteststarter:start((?PAR_RUNS div 2), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
+ls100(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
 
-nls1(_Config) -> parteststarter:start((?PAR_RUNS div 100),
-				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
-nls5(_Config) -> parteststarter:start((?PAR_RUNS div 20), 
-				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
-nls10(_Config) -> parteststarter:start((?PAR_RUNS div 10), 
-				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
-nls20(_Config) -> parteststarter:start((?PAR_RUNS div 5), 
-				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
-nls50(_Config) -> parteststarter:start((?PAR_RUNS div 2), 
-				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
-nls100(_Config) -> parteststarter:start((?PAR_RUNS), 
-				       ezk_ls_SUITE, nls_test, [?LS_RUNS]).
+nls1(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 100), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
+nls5(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 20), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
+nls10(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 10), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
+nls20(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 5), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
+nls50(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 2), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
+nls100(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
 
-ls_test(0) ->
+ls_test(0, _ConPId) ->
     ok;
-ls_test(N) ->
-    {ok, _E} = ezk:ls("/"),
-    ls_test(N-1).
+ls_test(N, ConPId) ->
+    {ok, _E} = ezk:ls(ConPId, "/"),
+    ls_test(N-1, ConPId).
 
-nls_test(N) ->
+nls_test(N, ConPId) ->
     Self = self(),
     io:format("starting receiverchild with ~w Rounds",[N]),
     K = spawn(fun() ->
 		      receive_ls(N, Self) end),
     io:format("starting to send"),
-    send_ls(N, K),
+    send_ls(N, K, ConPId),
     io:format("all send"),
     receive
 	all_ls_received ->
 	    ok
     end.
 
-send_ls(0, _Child) ->
+send_ls(0, _Child, _ConPId) ->
     ok;
-send_ls(N, Child) ->
-    ezk:n_ls("/", Child, ls),
-    send_ls(N-1, Child).
+send_ls(N, Child, ConPId) ->
+    ezk:n_ls(ConPId, "/", Child, ls),
+    send_ls(N-1, Child, ConPId).
 
 
 receive_ls(0, Father) ->

@@ -73,9 +73,10 @@ groups() ->
     [].
 
 all() -> 
-    [high_test
-     , high2_test
-    ].
+    {skip, test}.
+    %% [high_test
+    %%  , high2_test
+    %% ].
 
 high_test(_Config) ->
     Paras = [?HIGH_SERVER],

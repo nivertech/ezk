@@ -24,11 +24,11 @@
 -module(ezk_commands).
 
 %% gen_server callbacks
--export([addauth/3]).
+-export([addauth/3, die/2]).
 %normal functions
 -export([  create/3,   create/4,   create/5,   delete/2,   set/3,   set_acl/3]).
 -export([n_create/5, n_create/6, n_create/7, n_delete/4, n_set/5, n_set_acl/5]).
--export([  get/2,   get_acl/2,   ls2/2,   ls/2, die/2]).
+-export([  get/2,   get_acl/2,   ls2/2,   ls/2]).
 -export([n_get/4, n_get_acl/4, n_ls2/4, n_ls/4]).
 %functions dealing with watches
 -export([ls/4, get/4, ls2/4]).
@@ -43,7 +43,8 @@
     
 %% Kills the Server (not the supervisor!)
 die(ConnectionPId, Reason) -> 
-    gen_server:call(ConnectionPId, {exit, Reason}).
+    ?LOG(3,"Killcommand arrived in commands"),
+    gen_server:call(ConnectionPId, {die, Reason}).
 
 %%--------------------------- Zookeeper Functions ---------------------
 %% All Return {ok, Reply} if it worked.

@@ -5,12 +5,16 @@
 -------------------------------------------------
 ||>   How to use it
 -------------------------------------------------
-First you have to replace the ZK Server Ips in the 
-ezk.app.src with the IPs of your own ZooKeeper server.
-Then the client is started like every app. The name of 
-the app  is "ezk".
 
-A list of all Commands can be found by using ezk:help().
+In the file ezk.app.src are the standard server
+addresses. You have to replace these with your 
+own. They are in the format {Ip, Port, Timeout, Heartbeat}.
+
+Then you can use it by starting the application ezk. 
+A Connection can be established by calling
+ezk:start_connection/0.  
+
+A list of all Commands can be found by using ezk:help/0.
 
 
 -------------------------------------------------
@@ -49,21 +53,26 @@ answering.
 	   Or, if the Client loses Connection 
 	   {watchlost, WatchMessage, Watchdata}.
 
+- Connections: 
+           A running ezk can handle multiple connections. 
+	   This makes it easier to handle different sets of
+	   epheremal nodes and makes it possible to let one
+	   connection, and therefore all epheremal nodes created
+	   with it, die without touching other processes using
+	   zookeeper.
+	   A connection can get bound to one or more PIds by
+	   using ezk.add_monitors/2 or provide a list of PIds	
+	   when establishing the connection (using 
+	   ezk:start_connection/1). Those processes are then 
+	   monitored and if one dies the connection is ended. 
+
 - Parallel: 
   	   The Client is ready to handle a high amount 
 	   of parallel requests from different Processes.
 
-- Zookeeper:
+- Highlander:
            A behaviour. For further information... scroll down.
 
-- Because the ezk is a application on it's own there are some
-           issues concerning the epheremal nodes. If a process
-           dies unexpected which hast set a epheremal node the
-	   node is not erased by zookeeper unless the process
-	   eas linked to ezk which then also dies and kills the 
-	   connection to the zookeeperserver. 
-	   --> Perhabs the ezk is refactored to allow every 
-	   process to get it's own ezk.
 
 
 -------------------------------------------------

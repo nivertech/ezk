@@ -44,46 +44,53 @@
 
 
 help() ->
-    io:format("-----------------------------------------------------~n"),
-    io:format("| The Commands this Client knows about:             |~n"),
-    io:format("|---------------------------------------------------|~n"),
-    io:format("| ezk:create/2     : Path, Data                     |~n"),
-    io:format("| ezk:create/3     : Path, Data, Typ                |~n"),
-    io:format("| ezk:create/4     : Path, Data, Typ, [Acl]         |~n"),
-    io:format("| ezk:delete/1     : Path                           |~n"),
-    io:format("| ezk:delete_all/1 : Path                           |~n"),
-    io:format("| ezk:get/1        : Path                           |~n"),
-    io:format("| ezk:get/3        : Path, WatchOwner, Watchmessage |~n"),
-    io:format("| ezk:get_acl/1    : Path                           |~n"),
-    io:format("| ezk:set/2        : Path, Data                     |~n"),
-    io:format("| ezk:set_acl/2    : Path, [Acl]                    |~n"),
-    io:format("| ezk:ls/1         : Path                           |~n"),
-    io:format("| ezk:ls/3         : Path, WatchOwner, Watchmessage |~n"),
-    io:format("| ezk:ls2/1        : Path                           |~n"),
-    io:format("| ezk:ls2/3        : Path, WatchOwner, Watchmessage |~n"),
-    io:format("| ezk:die/0                                         |~n"),
-    io:format("| ezk:die/1        : Reason                         |~n"),
-    io:format("| ezk:info_get_iterations/0                         |~n"),
-    io:format("|---------------------------------------------------|~n"),
-    io:format("| In Progress:                                      |~n"),
-    io:format("| ezk:auth/2       : Scheme, Id                     |~n"),
-    io:format("| --> Dangerous function. Fail auths get the        |~n"),
-    io:format("|     zkServer to close the Session!                |~n"),
-    io:format("|      ---                                ---       |~n"),
-    io:format("| Nonblocking Calls:                                |~n"),
-    io:format("|     The last 2 Parameters are PId of the receiver |~n"),
-    io:format("|       and a Tag. The Answermessage is {Tag,Reply} |~n"),
-    io:format("| n_create/4, n_create/5, n_create/6,   n_delete/3  |~n"),
-    io:format("| n_set/4,    n_get/3,    n_set_acl/4,  n_get_acl/3 |~n"),
-    io:format("| n_ls/3,     n_ls2/3                               |~n"),
-    io:format("|---------------------------------------------------|~n"),
-    io:format("| Datatypes:                                        |~n"),
-    io:format("| Acl = {Scheme,Id, [Permission]}                   |~n"),
-    io:format("| Path = Scheme = Id = Reason = String              |~n"),  
-    io:format("| Permission = r | w | c | d | a                    |~n"),
-    io:format("| WatchOwner = PId           WatchMessage = String  |~n"),
-    io:format("| Data = All Things          Typ = e | s | es       |~n"),
-    io:format("|---------------------------------------------------|~n").
+    io:format("--------------------------------------------------------------~n"),
+    io:format("| The Commands this Client knows about:                      |~n"),
+    io:format("|------------------------------------------------------------|~n"),
+    io:format("| ezk:create/3     : ConPId,  Path, Data                     |~n"),
+    io:format("| ezk:create/4     : ConPId,  Path, Data, Typ                |~n"),
+    io:format("| ezk:create/5     : ConPId,  Path, Data, Typ, [Acl]         |~n"),
+    io:format("| ezk:delete/2     : ConPId,  Path                           |~n"),
+    io:format("| ezk:delete_all/2 : ConPId,  Path                           |~n"),
+    io:format("| ezk:get/2        : ConPId,  Path                           |~n"),
+    io:format("| ezk:get/4        : ConPId,  Path, WatchOwner, Watchmessage |~n"),
+    io:format("| ezk:get_acl/2    : ConPId,  Path                           |~n"),
+    io:format("| ezk:set/3        : ConPId,  Path, Data                     |~n"),
+    io:format("| ezk:set_acl/3    : ConPId,  Path, [Acl]                    |~n"),
+    io:format("| ezk:ls/2         : ConPId,  Path                           |~n"),
+    io:format("| ezk:ls/4         : ConPId,  Path, WatchOwner, Watchmessage |~n"),
+    io:format("| ezk:ls2/2        : ConPId,  Path                           |~n"),
+    io:format("| ezk:ls2/4        : ConPId,  Path, WatchOwner, Watchmessage |~n"),
+    io:format("| ezk:die/1        : ConPId                                  |~n"),
+    io:format("| ezk:die/2        : ConPId,  Reason                         |~n"),
+    io:format("| ezk:info_get_iterations/1  : ConPId                        |~n"),
+    io:format("| ezk:start_connection/0                                     |~n"),
+    io:format("| ezk:start_connection/1     : Servers                       |~n"),
+    io:format("| ezk:end_connection/1       : ConPId, Reason                |~n"),
+    io:format("| ezk:addMonitors/2          : ConPId,                       |~n"),
+    io:format("| ezk:getConnections/0                                       |~n"),
+    io:format("|------------------------------------------------------------|~n"),
+    io:format("| In Progress:                                               |~n"),
+    io:format("| ezk:auth/3       : ConPId,  Scheme, Id                     |~n"),
+    io:format("| --> Dangerous function. Fail auths get the                 |~n"),
+    io:format("|     zkServer to close the Session!                         |~n"),
+    io:format("|      ---                                ---                |~n"),
+    io:format("| Nonblocking Calls:                                         |~n"),
+    io:format("|     The last 2 Parameters are PId of the receiver          |~n"),
+    io:format("|       and a Tag. The Answermessage is {Tag,Reply}          |~n"),
+    io:format("| n_create/4, n_create/5, n_create/6,   n_delete/3           |~n"),
+    io:format("| n_set/4,    n_get/3,    n_set_acl/4,  n_get_acl/3          |~n"),
+    io:format("| n_ls/3,     n_ls2/3                                        |~n"),
+    io:format("|------------------------------------------------------------|~n"),
+    io:format("| Datatypes:                                                 |~n"),
+    io:format("| Acl = {Scheme,Id, [Permission]}                            |~n"),
+    io:format("| Path = Scheme = Id = Reason = String                       |~n"),  
+    io:format("| Permission = r | w | c | d | a                             |~n"),
+    io:format("| WatchOwner, ConPId = PId           WatchMessage = String   |~n"),
+    io:format("| Data    = All Things              Typ = e | s | es         |~n"),
+    io:format("| Server  = {IP, Port, Timeout(ms), Heartbeattime(ms)        |~n"),
+    io:format("| Servers = [Server]                                         |~n"),
+    io:format("|------------------------------------------------------------|~n").
 
 
 %%--------------------------- Zookeeper Functions ---------------------
@@ -200,17 +207,28 @@ die(ConnectionPId) ->
 die(ConnectionPId, Reason) ->
     ezk_commands:die(ConnectionPId, Reason).
     
+%% Starts a connection to a zookeeper Server
+%% Returns {ok, PID} where Pid is the PId of the gen_server 
+%% which manages the connection
 start_connection() ->
     ezk_connection_manager:start_connection().
     
+%% Starts a connection to a zookeeper Server
+%% Returns {ok, PID} where Pid is the PId of the gen_server 
+%% which manages the connection
 start_connection(Servers) ->
     ezk_connection_manager:start_connection(Servers).
     
+%% stops a connection. Returns ok.
 end_connection(ConnectionPId, Reason) ->
     ezk_connection_manager:end_connection(ConnectionPId, Reason).
 
+%% Adds new monitor PIds to bind to one connection. If one 
+%% of the Monitors dies the connection is closed down.
 add_monitors(ConnectionPId, Monitors) ->
     ezk_connection_manager:add_monitors(ConnectionPId, Monitors).
 
+%% Provides a list of all actually active connections. 
+%% Returns [Connection] where Connection = {PId, [MonitorPId]} 
 get_connections() ->
     ezk_connection_manager:get_connections().

@@ -45,7 +45,7 @@
 -define(HIGH2_RANDOM_RANGE, 100000).
 
 suite() ->
-    [{timetrap,{seconds,300}}].
+    [{timetrap,{seconds,400}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
@@ -76,10 +76,10 @@ groups() ->
     [].
 
 all() -> 
-    %% {skip, test}.
-    [high_test
-     , high2_test
-    ].
+    %%{skip, test}.
+     [high_test
+      , high2_test
+     ].
 
 high_test(Config) ->
     {connection_pid, ConnectionPId} = lists:keyfind(connection_pid, 1, Config),

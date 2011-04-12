@@ -37,7 +37,8 @@ groups() ->
     [].
 
 all() -> 
-    [epheremal_monitoring].
+    %%{skip, test}.
+     [epheremal_monitoring].
 
 epheremal_monitoring(_Config) ->
     Self = self(),

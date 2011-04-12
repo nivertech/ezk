@@ -65,9 +65,9 @@ groups() ->
     [].
 
 all() ->
-     [rt1, rt5, rt10, rt50, rt75, rt100,
-     multirun_test].
-     %% {skip, test}.
+      [rt1, rt5, rt10, rt50, rt75, rt100,
+      multirun_test].
+     %%{skip, test}.
 
 rt1(Config) -> 
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    

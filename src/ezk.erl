@@ -43,7 +43,6 @@
 -export([add_monitors/2, get_connections/0]).
 
 
-
 help() ->
     io:format("-----------------------------------------------------~n"),
     io:format("| The Commands this Client knows about:             |~n"),

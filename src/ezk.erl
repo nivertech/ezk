@@ -40,6 +40,7 @@
 -export([die/1, die/2]).
 
 -export([start_connection/0, start_connection/1, end_connection/2]).
+-export([add_monitors/2, get_connections/0]).
 
 
 
@@ -208,3 +209,9 @@ start_connection(Servers) ->
     
 end_connection(ConnectionPId, Reason) ->
     ezk_connection_manager:end_connection(ConnectionPId, Reason).
+
+add_monitors(ConnectionPId, Monitors) ->
+    ezk_connection_manager:add_monitors(ConnectionPId, Monitors).
+
+get_connections() ->
+    ezk_connection_manager:get_connections().

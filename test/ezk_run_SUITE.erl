@@ -30,10 +30,11 @@
 -define(RUN_ROUNDS,25).
 -define(DATALENGTH, 8).
 -define(PAR_RUNS, 900).
+-define(MULTIRUN_RUNS, 900).
 
 
 suite() ->
-    [{timetrap,{seconds,40}}].
+    [{timetrap,{seconds,100}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
@@ -48,10 +49,10 @@ end_per_suite(Config) ->
     application:stop(sasl),
     ok.
 
-init_per_group(GroupName, Config) ->
+init_per_group(_GroupName, Config) ->
     Config.
 
-end_per_group(GroupName, Config) ->
+end_per_group(_GroupName, _Config) ->
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -64,7 +65,8 @@ groups() ->
     [].
 
 all() ->
-     [rt1, rt5, rt10, rt50, rt75, rt100].
+     [rt1, rt5, rt10, rt50, rt75, rt100,
+     multirun_test].
      %% {skip, test}.
 
 rt1(Config) -> 
@@ -92,7 +94,31 @@ rt100(Config) ->
     parteststarter:start((?PAR_RUNS), ezk_run_SUITE, run_test,
 			 [?RUN_ROUNDS, ConPId]).
 
-run_test(Cycles, ConPId) ->
+multirun_test(_Config) ->
+    {ok, Con1} = ezk:start_connection(),
+    {ok, Con2} = ezk:start_connection(),
+    {ok, Con3} = ezk:start_connection(),
+    {ok, Con4} = ezk:start_connection(),
+    {ok, Con5} = ezk:start_connection(),
+    parteststarter:start(5, ezk_run_SUITE, multirun_tester, [{Con1, Con2, Con3, Con4,
+							      Con5}]).
+
+multirun_tester(Number, {Con1, Con2, Con3, Con4, Con5}) ->
+    case Number of
+	1 -> Con = Con1;
+	2 -> Con = Con2;
+	3 -> Con = Con3;
+	4 -> Con = Con4;
+	5 -> Con = Con5;
+        _Else -> Con = Con1
+    end,
+    io:format("Number ~w is starting the run_test with Connection ~w",[Number, Con]),
+    run_test(Number, ?MULTIRUN_RUNS, Con).
+    
+    
+
+
+run_test(_Number, Cycles, ConPId) ->
     io:format("Start ~w with ~w cycles",[self(), Cycles]),
     List  = sequenzed_create(ConPId, "/run_multi",Cycles,[]),
     io:format("test data  ~w with ~w cycles",[self(), Cycles]),
@@ -119,33 +145,33 @@ wait_watches([{Path, _Data} | Tail]) ->
 	    wait_watches(Tail)
     end.
     
-sequenzed_delete(ConPId, []) ->
+sequenzed_delete(_ConPId, []) ->
     ok;
 sequenzed_delete(ConPId, [{Path,_Data} | Tail]) ->
     {ok, Path} = ezk:delete(ConPId, Path),
     sequenzed_delete(ConPId, Tail).
 
-set_watch_and_test(ConPId, [])->
+set_watch_and_test(_ConPId, [])->
     ok;
 set_watch_and_test(ConPId, [{Path,Data} | Tail]) ->
     Self = self(),
     {ok, {Data, _I}} = ezk:get(ConPId, Path, Self, {datawatch, Path}),
     set_watch_and_test(ConPId, Tail).
 
-change_data(ConPId, [], NewList) ->
+change_data(_ConPId, [], NewList) ->
     NewList;
 change_data(ConPId, [{Path, _Data} | Tail], NewList) ->
     NewData = stringmaker(?DATALENGTH),
     {ok, _I} = ezk:set(ConPId, Path, NewData),
     change_data(ConPId, Tail, [{Path, NewData} | NewList]).
 
-test_data(ConPId, []) ->
+test_data(_ConPId, []) ->
     ok;
 test_data(ConPId, [{Path, Data} | Tail]) ->
     {ok, {Data, _I}} = ezk:get(ConPId, Path),
     test_data(ConPId, Tail).
 
-sequenzed_create(ConPId, _Path, 0, List) ->
+sequenzed_create(_ConPId, _Path, 0, List) ->
     List;
 sequenzed_create(ConPId, Path, CyclesLeft, List) ->
     Data = stringmaker(?DATALENGTH),

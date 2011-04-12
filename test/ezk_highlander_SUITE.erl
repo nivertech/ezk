@@ -176,8 +176,3 @@ spawn_list_highlander(ConnectionPId, Butler, Dict, Number, I) ->
     io:format("Spawned Number ~w with pid ~w",[I, FatherPId]),
     spawn_list_highlander(ConnectionPId, Butler, dict:append(FatherPId, I, Dict),
 			  Number, I-1).
-
-    
-		      
-
-

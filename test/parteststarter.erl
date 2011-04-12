@@ -23,5 +23,5 @@ spawn_left(Number, M, F, A, Father) ->
     io:format("spawn number ~w",[Number]),
     K = spawn(fun()->
 		      spawn_left(Number-1, M, F, A, Father) end),
-    apply(M, F, A),
+    apply(M, F, [Number | A]),
     K!ended.

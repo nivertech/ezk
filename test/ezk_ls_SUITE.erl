@@ -46,10 +46,10 @@ end_per_suite(Config) ->
     application:stop(sasl),
     ok.
 
-init_per_group(GroupName, Config) ->
+init_per_group(_GroupName, Config) ->
     Config.
 
-end_per_group(GroupName, Config) ->
+end_per_group(_GroupName, _Config) ->
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -105,13 +105,13 @@ nls100(Config) ->
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
     parteststarter:start((?PAR_RUNS), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
 
-ls_test(0, _ConPId) ->
+ls_test(_Number, 0, _ConPId) ->
     ok;
-ls_test(N, ConPId) ->
+ls_test(Number, N, ConPId) ->
     {ok, _E} = ezk:ls(ConPId, "/"),
-    ls_test(N-1, ConPId).
+    ls_test(Number, N-1, ConPId).
 
-nls_test(N, ConPId) ->
+nls_test(_Number, N, ConPId) ->
     Self = self(),
     io:format("starting receiverchild with ~w Rounds",[N]),
     K = spawn(fun() ->

@@ -30,7 +30,7 @@
 -define(RUN_ROUNDS,25).
 -define(DATALENGTH, 8).
 -define(PAR_RUNS, 900).
--define(MULTIRUN_RUNS, 900).
+-define(MULTIRUN_RUNS, 550).
 
 
 suite() ->

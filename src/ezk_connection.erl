@@ -34,6 +34,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
+-export([establish_connection/4]).
+
 
 -include_lib("../include/ezk.hrl").
 
@@ -42,19 +44,31 @@
 
 start(Args) ->
     ?LOG(1,"Connection: Start link called with Args: ~w",[Args]),
-    gen_server:start(?MODULE, Args, []).
+    gen_server:start(?MODULE, Args , []).
 
 
 %% inits the random function and chooeses a Server from the list.
 %% then establishes a connection to that server.
 %% returns {ok, State} or {error, ErrorMessage} or {unknown, Message, ErrorCode}
-init(Servers) ->
+init([Servers, TryTimes]) ->
     random:seed(erlang:now()),
+    K = n_init_trys(Servers, TryTimes),
+    ?LOG(1, "Connection established"), 
+    K.
+
+n_init_trys(_Servers, 0) ->
+    error;
+n_init_trys(Servers, N) ->
     ?LOG(1,"Connect init : incomming args: ~w",[Servers]),
     WhichServer = random:uniform(length(Servers)),
     ?LOG(0,"Choose server ~w",[WhichServer]),
     {Ip, Port, WantedTimeout, HeartBeatTime} =  lists:nth(WhichServer, Servers),
-    establish_connection(Ip, Port, WantedTimeout, HeartBeatTime).
+    case establish_connection(Ip, Port, WantedTimeout, HeartBeatTime) of
+	{ok, State} ->
+	    {ok, State};
+	error ->
+	    n_init_trys(Servers, N-1)
+    end.
 
 
 %% Handles calls for Number of Iteration
@@ -191,37 +205,41 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
     end.  
 
-
 %% Sets up a connection, performs the Handshake and saves the data to the initial State 
 establish_connection(Ip, Port, WantedTimeout, HeartBeatTime) ->
     ?LOG(1, "Connection: Server starting"),
-    ?LOG(3, "Connection: IP: ~s , Port: ~w, Timeout: ~w.",[Ip,Port,WantedTimeout]),    
-    {ok, Socket} = gen_tcp:connect(Ip,Port,[binary,{packet,4}]),
-    ?LOG(3, "Connection: Socket open"),    
-    HandshakePacket = <<0:64, WantedTimeout:64, 0:64, 16:64, 0:128>>,
-    ?LOG(3, "Connection: Handshake build"),    
-    ok = gen_tcp:send(Socket, HandshakePacket),
-    ?LOG(3, "Connection: Handshake send"),    
-    ok = inet:setopts(Socket,[{active,once}]),
-    ?LOG(3, "Connection: Channel set to Active"),    
-    receive
-	{tcp,Socket,Reply} ->
-	    ?LOG(3, "Connection: Handshake Reply there"),    
-	    <<RealTimeout:64, SessionId:64, 16:32, _Hash:128>> = Reply,
-	    Watchtable    = ets:new(watchtable, [duplicate_bag, private]),
-	    InitialState  = #cstate{  
-	      socket = Socket, ip = Ip, 
-	      port = Port, timeout = RealTimeout,
-	      sessionid = SessionId, iteration = 1,
-	      watchtable = Watchtable, heartbeattime = HeartBeatTime},   
-	    ?LOG(3, "Connection: Initial state build"),         
+    ?LOG(3, "Connection: IP: ~s , Port: ~w, Timeout: ~w.",[Ip,Port,WantedTimeout]),  
+    case  gen_tcp:connect(Ip,Port,[binary,{packet,4}]) of
+	{ok, Socket} ->
+	    ?LOG(3, "Connection: Socket open"),    
+	    HandshakePacket = <<0:64, WantedTimeout:64, 0:64, 16:64, 0:128>>,
+	    ?LOG(3, "Connection: Handshake build"),    
+	    ok = gen_tcp:send(Socket, HandshakePacket),
+	    ?LOG(3, "Connection: Handshake send"),    
 	    ok = inet:setopts(Socket,[{active,once}]),
-	    ?LOG(3, "Connection: Startup complete",[]),
-	    ?LOG(3, "Connection: Initial State : ~w",[InitialState])
-    end,
-    erlang:send_after(HeartBeatTime, self(), heartbeat),
-    ?LOG(3,"Connection established with server ~s, ~w ~n",[Ip, Port]),
-    {ok, InitialState}.
+	    ?LOG(3, "Connection: Channel set to Active"),    
+	    receive
+		{tcp,Socket,Reply} ->
+		    ?LOG(3, "Connection: Handshake Reply there"),    
+		    <<RealTimeout:64, SessionId:64, 16:32, _Hash:128>> = Reply,
+		    Watchtable    = ets:new(watchtable, [duplicate_bag, private]),
+		    InitialState  = #cstate{  
+		      socket = Socket, ip = Ip, 
+		      port = Port, timeout = RealTimeout,
+		      sessionid = SessionId, iteration = 1,
+		      watchtable = Watchtable, heartbeattime = HeartBeatTime},   
+		    ?LOG(3, "Connection: Initial state build"),         
+		    ok = inet:setopts(Socket,[{active,once}]),
+		    ?LOG(3, "Connection: Startup complete",[]),
+		    ?LOG(3, "Connection: Initial State : ~w",[InitialState])
+	    end,
+	    erlang:send_after(HeartBeatTime, self(), heartbeat),
+	    ?LOG(3,"Connection established with server ~s, ~w ~n",[Ip, Port]),
+	    {ok, InitialState};
+	_Else ->
+	    error
+    end.
+	    
 
 %%% heartbeatreply: decrement the number of outstanding Heartbeats.
 handle_typed_incomming_message({heartbeat,_HeartBeat}, State) -> 

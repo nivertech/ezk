@@ -43,7 +43,7 @@ get_message_typ(Data) ->
 	<<255, 255, 255, 252, 0:64, Payload/binary>> ->
 	    {authreply, Payload};
 %%% Normal Replys
-        <<MessId:32, 0:32, Zxid:32, Payload/binary>> ->
+        <<MessId:32, Zxid:64, Payload/binary>> ->
 	    ?LOG(3, "packet_2_message: A normal Message arrived"),
             {normal, MessId, Zxid, Payload}
     end.
@@ -156,11 +156,10 @@ get_n_paths(N, Binary) ->
 %% interprets the parameters of a node and returns a List of them.
 getbinary_2_list(Binary) ->
     ?LOG(3,"p2m: Trying to match Parameterdata"),
-    <<0:32,              Czxid:32,        0:32,         Mzxid:32,
+    <<Czxid:64,                           Mzxid:64,
       Ctime:64,                           Mtime:64,
       DaVer:32,          CVer:32,         AclVer:32,    EpheOwner:64,  
-                         DaLe:32,         NumChi:32,    0:32,
-      Pzxid:32>> = Binary,
+                         DaLe:32,         NumChi:32,    Pzxid:64>> = Binary,
     ?LOG(3,"p2m: Matching Parameterdata Successfull"),
     [{czxid, Czxid}, {mzxid, Mzxid},
      {ctime, Ctime}, {mtime, Mtime},

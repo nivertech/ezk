@@ -30,11 +30,11 @@
 -define(RUN_ROUNDS,25).
 -define(DATALENGTH, 8).
 -define(PAR_RUNS, 900).
--define(MULTIRUN_RUNS, 550).
+-define(MULTIRUN_RUNS, 450).
 
 
 suite() ->
-    [{timetrap,{seconds,200}}].
+    [{timetrap,{seconds,350}}].
 
 init_per_suite(Config) ->
     application:start(ezk),

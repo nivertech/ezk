@@ -211,7 +211,7 @@ die(ConnectionPId, Reason) ->
 %% Returns {ok, PID} where Pid is the PId of the gen_server 
 %% which manages the connection
 start_connection() ->
-    ezk_connection_manager:start_connection().
+    start_connection([]).
     
 %% Starts a connection to a zookeeper Server
 %% Returns {ok, PID} where Pid is the PId of the gen_server 

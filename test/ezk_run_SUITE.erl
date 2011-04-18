@@ -30,7 +30,7 @@
 -define(RUN_ROUNDS,25).
 -define(DATALENGTH, 8).
 -define(PAR_RUNS, 900).
--define(MULTIRUN_RUNS, 450).
+-define(MULTIRUN_RUNS, 350).
 
 
 suite() ->
@@ -67,7 +67,7 @@ groups() ->
 all() ->
       [rt1, rt5, rt10, rt50, rt75, rt100,
       multirun_test].
-     %%{skip, test}.
+     %% {skip, test}.
 
 rt1(Config) -> 
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    

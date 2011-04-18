@@ -37,7 +37,7 @@ groups() ->
     [].
 
 all() -> 
-    %%{skip, test}.
+    %% {skip, test}.
      [epheremal_monitoring].
 
 epheremal_monitoring(_Config) ->

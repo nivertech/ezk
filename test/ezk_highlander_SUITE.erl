@@ -39,8 +39,8 @@
 
 -define(HIGH_SERVER, 20).
 -define(HIGH_RANDOM_RANGE, 100).
--define(HIGH2_SERVER, 100).
--define(HIGH2_NUMBER,20).
+-define(HIGH2_SERVER, 70).
+-define(HIGH2_NUMBER,30).
 -define(HIGH2_SLEEP_SEND_THRESHOLD,60000).
 -define(HIGH2_RANDOM_RANGE, 100000).
 
@@ -76,7 +76,7 @@ groups() ->
     [].
 
 all() -> 
-    %%{skip, test}.
+    %% {skip, test}.
      [high_test
       , high2_test
      ].

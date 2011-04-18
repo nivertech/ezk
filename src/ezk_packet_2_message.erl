@@ -74,6 +74,8 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
             Replydata = interpret_reply_data(CommId, Path, Payload),
 	    Reply = {ok, Replydata},
 	    ?LOG(1, "The Reply is ~w",[Reply]);
+	<<255,255,255,142,_Payload/binary>> ->
+	    Reply = {error, "Invalid ACL"};
 	<<255,255,255,146,_Payload/binary>> ->
 	    Reply = {error, "Directory already exists!"};
 	<<255,255,255,154,_Payload/binary>> ->
@@ -180,7 +182,7 @@ get_n_acls(0, Acls, Binary) ->
     {Acls, Binary};
 get_n_acls(N, Acls,  Binary) ->
     ?LOG(3,"P2M: Parse next acl from this: ~w.",[Binary]),
-    <<0:27, R:1, W:1, C:1, D:1, A:1, Left/binary>>  = Binary,
+    <<0:27, A:1, D:1, C:1, W:1, R:1, Left/binary>>  = Binary,
     {Scheme, Left2}         = unpack(Left),
     ?LOG(3,"P2M: Scheme is: ~w.",[Scheme]),
     {Id,     NowLeft}       = unpack(Left2),

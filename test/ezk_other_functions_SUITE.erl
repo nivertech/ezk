@@ -47,8 +47,12 @@ all() ->
     %% {skip, test}.
     [help_test, acl_test].
 
-help_test(_Config) ->
+info_tests(_Config) ->
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config), 
+    {ok, _I} = ezk:info_get_iterations(L),
+    {ok, _I2} = ezk:get_connections(),
     ezk:help().
+    
 
 acl_test(Config) ->    
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),   
@@ -112,6 +116,7 @@ is_elem(Elem, [First | Tail]) ->
 	true ->
 	    is_elem(Elem, Tail)
     end.
+
 
 
     

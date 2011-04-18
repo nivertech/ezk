@@ -109,7 +109,7 @@ handle_call({add_monitors, ConnectionPId, MonitorPIds}, _From, State) ->
     NewState    = State#con_man_state{connections = NewConnections},
     {reply, ok, NewState};
 handle_call({get_connections}, _From, State) ->
-    {reply, State#con_man_state.connections, State}.
+    {reply, {ok, State#con_man_state.connections}, State}.
 
 
 handle_cast(_Mes, State) ->

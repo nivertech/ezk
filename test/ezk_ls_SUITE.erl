@@ -63,6 +63,7 @@ groups() ->
 
 all() ->
     [ ls1,  ls5,  ls10,  ls20,  ls50,  ls100,
+    ls21,  ls25,  ls210,  ls220,  ls250,  ls2100,
     nls1, nls5, nls10, nls20, nls50, nls100].
      %% {skip, test}.
 
@@ -86,6 +87,26 @@ ls100(Config) ->
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
     parteststarter:start((?PAR_RUNS), ezk_ls_SUITE, ls_test, [?LS_RUNS, ConPId]).
 
+ls21(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    io:format("Starting test with ConPid ~w",[ConPId]),
+    parteststarter:start((?PAR_RUNS div 100), ezk_ls_SUITE, ls2_test, [?LS_RUNS, ConPId]).
+ls25(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 20), ezk_ls_SUITE, ls2_test, [?LS_RUNS, ConPId]).
+ls210(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 10), ezk_ls_SUITE, ls2_test, [?LS_RUNS, ConPId]).
+ls220(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS div 5), ezk_ls_SUITE, ls2_test, [?LS_RUNS, ConPId]).
+ls250(Config) ->
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+     parteststarter:start((?PAR_RUNS div 2), ezk_ls_SUITE, ls2_test, [?LS_RUNS, ConPId]).
+ls2100(Config) -> 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
+    parteststarter:start((?PAR_RUNS), ezk_ls_SUITE, ls2_test, [?LS_RUNS, ConPId]).
+
 nls1(Config) -> 
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
     parteststarter:start((?PAR_RUNS div 100), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
@@ -104,6 +125,12 @@ nls50(Config) ->
 nls100(Config) -> 
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),    
     parteststarter:start((?PAR_RUNS), ezk_ls_SUITE, nls_test, [?LS_RUNS, ConPId]).
+
+ls2_test(_Number, 0, _ConPId) ->
+    ok;
+ls2_test(Number, N, ConPId) ->
+    {ok, _E} = ezk:ls2(ConPId, "/"),
+    ls2_test(Number, N-1, ConPId).
 
 ls_test(_Number, 0, _ConPId) ->
     ok;

@@ -37,7 +37,7 @@
 %infos
 -export([info_get_iterations/1,  help/0]).
 %Stop commands (forcing Client to choose a new random Server from List)
--export([die/1, die/2]).
+-export([die/1, die/2, auth/3]).
 
 -export([start_connection/0, start_connection/1, end_connection/2]).
 -export([add_monitors/2, get_connections/0]).
@@ -95,7 +95,14 @@ help() ->
 
 %%--------------------------- Zookeeper Functions ---------------------
 %% Return {ok, Reply}.
-%% All functions are blocking.
+
+%% Reply = authed 
+%% Returns {error, auth_in_progress}  if the authslot is already in use.
+%% Returns {error, auth_failed} if server rejected auth
+%% Returns {error, unknown, ErrorCodeBin} if something new happened
+auth(ConnectionPId, Scheme, Id) ->
+   ezk_commands:addauth(ConnectionPId, Scheme, Id).
+
 
 %% Creates a new ZK_Node
 %% Reply = Path where Path = String

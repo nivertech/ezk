@@ -111,7 +111,7 @@ n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag) ->
     ezk_commands:n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag).
 
 
-%% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
+%% Acls = [Acl] where Acl = {Permissions, Scheme, Id} 
 %% with Scheme and Id = String
 %% and Permission = [Per] | String 
 %% where Per = r | w | c | d | a

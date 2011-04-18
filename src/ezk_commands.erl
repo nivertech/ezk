@@ -69,7 +69,7 @@ create(ConnectionPId, Path, Data, Typ) ->
 n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag) ->
    gen_server:cast(ConnectionPId, {nbcommand, {create, Path, Data, Typ, [undef]}, 
 				   Receiver, Tag}).
-%% Acls = [Acl] where Acl = {Scheme, Id, Permission} 
+%% Acls = [Acl] where Acl = {Permissions, Scheme, Id} 
 %% with Scheme and Id = String
 %% and Permission = [Per] | String 
 %% where Per = r | w | c | d | a

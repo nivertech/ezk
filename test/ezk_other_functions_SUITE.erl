@@ -45,11 +45,11 @@ groups() ->
 
 all() -> 
     %% {skip, test}.
-    [help_test, acl_test].
+    [info_test, acl_test].
 
-info_tests(_Config) ->
+info_tests(Config) ->
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config), 
-    {ok, _I} = ezk:info_get_iterations(L),
+    {ok, _I} = ezk:info_get_iterations(ConPId),
     {ok, _I2} = ezk:get_connections(),
     ezk:help().
     

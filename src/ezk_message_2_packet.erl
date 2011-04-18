@@ -156,7 +156,7 @@ acls_2_bin([undef], _AclBin, Int) ->
 %% The case in which the real work is going on.
 %% The Permission is translated to a bitcombination, where the last 5 bits are:
 %% admin, delete, create, write, read
-acls_2_bin([{Scheme, Id, Permi}| Left], AclBin, Int) ->
+acls_2_bin([{Permi, Scheme, Id}| Left], AclBin, Int) ->
     ?LOG(3,"m2p: one more element for acl build"),
     ?LOG(3,"m2p: ACL : ~w",[{Scheme, Id, Permi}]),
     PermiInt = get_permi_int(Permi,0),

@@ -38,7 +38,7 @@
 		     connection_pid
 		    }).
 
--export([start/4, failover/2]).
+-export([start/4, start_link/4, failover/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 -export([behaviour_info/1]).
@@ -51,6 +51,9 @@ behaviour_info(callbacks) ->
 %% The startfunction.
 start(ConnectionPId, Module, Parameters, NodeList) ->
     gen_server:start( ?MODULE, [ConnectionPId, Module, Parameters, NodeList], []).
+
+start_link(ConnectionPId, Module, Parameters, NodeList) ->
+    gen_server:start_link(?MODULE, [ConnectionPId, Module, Parameters, NodeList], []).
 
 
 %% The init function tryes every given path once and ensures that all

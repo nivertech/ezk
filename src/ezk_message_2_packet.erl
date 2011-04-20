@@ -125,8 +125,8 @@ make_addauth_packet({add_auth, Scheme, Auth}) ->
 
 %% gets a list, determines the length and then puts both together as a binary.
 pack_it_l2b(List) ->
-    Length = length(List),
-    <<Length:32,(list_to_binary(List))/binary>>.
+    Length = iolist_size(List),
+    <<Length:32,(iolist_to_binary(List))/binary>>.
 
 %% Gets the command id, the path, the load and the actual iteration and forms a
 %% zookeeper packet from all of them but the path. Instead the Path is passed on

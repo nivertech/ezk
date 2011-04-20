@@ -1,5 +1,5 @@
 
--module('epheremal_ detection_SUITE').
+-module(epheremal_detection_SUITE).
 
 -compile(export_all).
 

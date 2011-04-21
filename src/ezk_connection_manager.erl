@@ -132,7 +132,12 @@ handle_info({'DOWN', MonitorRef, _Type, _Object, _Info}, State) ->
 	    {noreply, State};
 	_Else ->
 	    {noreply, State}
-    end.
+    end;
+handle_info({tcp_closed, _Port}, State) ->
+    io:format("TCP ABGEBROCHEN"),
+    {stop, tcp_closed, State}.
+    
+
 
 %% gets the connectionlist and searches for the connection pid which corresponds to the 
 %% given monitor reference

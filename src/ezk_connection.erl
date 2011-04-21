@@ -27,6 +27,19 @@
 
 -behaviour(gen_server).
 
+-record(cstate, {open_requests = dict:new(), 
+		 socket :: port(), 
+		 ip, 
+		 port :: 0..65535, 
+		 timeout, 
+		 sessionid, 
+		 iteration :: pos_integer(),
+		 outstanding_heartbeats = 0,
+		 outstanding_auths = 0,
+		 watchtable,
+		 heartbeattime
+ 	       }).
+
 %% API
 -export([start/1]).
 

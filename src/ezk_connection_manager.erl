@@ -25,6 +25,11 @@
 
 -behaviour(gen_server).
 
+-record(con_man_state, {defaultserverlist,
+		       connections,
+		       monitorings
+		       }).
+
 %% API
 -export([start_link/1]).
 

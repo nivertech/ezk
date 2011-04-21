@@ -45,7 +45,7 @@ groups() ->
 
 all() -> 
     %% {skip, test}.
-    [info_test, acl_test].
+    [info_tests, acl_test].
 
 info_tests(Config) ->
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config), 

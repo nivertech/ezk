@@ -59,54 +59,54 @@ addauth(ConnectionPId, Scheme, Auth) ->
 %% Creates a new ZK_Node
 %% Reply = Path where Path = String
 create(ConnectionPId, Path, Data) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {create, path_correcter(Path), 
-							    Data, [], [undef]}})).
+     
+		  gen_server:call(ConnectionPId, {command, {create, Path, 
+							    Data, [], [undef]}}).
 n_create(ConnectionPId, Path, Data, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {nbcommand, {create, path_correcter(Path),
+     
+		  gen_server:cast(ConnectionPId, {nbcommand, {create, Path,
 							      Data, [], [undef]}, 
-				   Receiver, Tag})).
+				   Receiver, Tag}).
 %% Typ = e | s | es (stands for etheremal, sequenzed or both)
 create(ConnectionPId, Path, Data, Typ) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {create, path_correcter(Path),
-							    Data, Typ, [undef]}})).
+     
+		  gen_server:call(ConnectionPId, {command, {create, Path,
+							    Data, Typ, [undef]}}).
 n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {nbcommand, {create, path_correcter(Path),
+     
+		  gen_server:cast(ConnectionPId, {nbcommand, {create, Path,
 							      Data, Typ, [undef]}, 
-				   Receiver, Tag})).
+				   Receiver, Tag}).
 
 %% Acls = [Acl] where Acl = {Permissions, Scheme, Id} 
 %% with Scheme and Id = String
 %% and Permission = [Per] | String 
 %% where Per = r | w | c | d | a
 create(ConnectionPId, Path, Data, Typ, Acls)  ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {create, path_correcter(Path),
-							    Data, Typ, Acls}})).
+     
+		  gen_server:call(ConnectionPId, {command, {create, Path,
+							    Data, Typ, Acls}}).
 n_create(ConnectionPId, Path, Data, Typ, Acls, Receiver, Tag)  ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {nbcommand, {create, path_correcter(Path),
+     
+		  gen_server:cast(ConnectionPId, {nbcommand, {create, Path,
 							      Data, Typ, Acls}, 
-				   Receiver, Tag})).
+				   Receiver, Tag}).
 
 ensure_path(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
-		  macro_ensure_path(ConnectionPId, path_correcter(Path))).
+     
+		  macro_ensure_path(ConnectionPId, Path).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.
 %% Reply = Path where Path = String
 delete(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {delete,  path_correcter(Path),
-							    []}})).
+     
+		  gen_server:call(ConnectionPId, {command, {delete,  Path,
+							    []}}).
 n_delete(ConnectionPId, Path, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {nbcommand, {delete,  path_correcter(Path),
-							      []}, Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {nbcommand, {delete,  Path,
+							      []}, Receiver, Tag}).
 
 %% Deletes a ZK_Node and all his childs.
 %% Reply = Path where Path = String
@@ -115,101 +115,101 @@ n_delete(ConnectionPId, Path, Receiver, Tag) ->
 %% other nodes befor giving the error back, so a 
 %% maximum number of nodes is deleted.
 delete_all(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
-		  macro_delete_all_childs(ConnectionPId, path_correcter(Path))).    
+     
+		  macro_delete_all_childs(ConnectionPId, Path).    
 
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
 %% and Parameters = [{ParameterName, Value}]
 %% where ParameterName = czxid | mzxid | pzxid | ctime | mtime | dataversion | 
 %%                       datalength | number_children | cversion | aclversion
 get(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {get, path_correcter(Path)}})).
+     
+		  gen_server:call(ConnectionPId, {command, {get, Path}}).
 n_get(ConnectionPId, Path, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {command, {get, path_correcter(Path)},
-						  Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {command, {get, Path},
+						  Receiver, Tag}).
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
 %% M = {WatchMessage, {Path, Type, SyncCon}
 %% with Type = child
 get(ConnectionPId, Path, WatchOwner, WatchMessage) ->
-    if_path_ok_do(Path,
+     
 		  gen_server:call(ConnectionPId, {watchcommand, {get, getw, 
-								 path_correcter(Path),
+								 Path,
 								 {data, WatchOwner,
-								  WatchMessage}}})).
+								  WatchMessage}}}).
 
 %% Returns the actual Acls of a Node
 %% Reply = {[ACL],Parameters} with ACl and Parameters like above
 get_acl(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
+     
 		  gen_server:call(ConnectionPId, {command, {get_acl, 
-							    path_correcter(Path)}})).
+							    Path}}).
 n_get_acl(ConnectionPId, Path, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {command, {get_acl,path_correcter( Path)},
-						  Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {command, {get_acl, Path},
+						  Receiver, Tag}).
 
 %% Sets new Data in a Node. Old ones are lost.
 %% Reply = Parameters with Data like at get
 set(ConnectionPId, Path, Data) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {set, path_correcter(Path),
-							    Data}})).
+     
+		  gen_server:call(ConnectionPId, {command, {set, Path,
+							    Data}}).
 n_set(ConnectionPId, Path, Data, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {command, {set, path_correcter(Path),
-							    Data}, Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {command, {set, Path,
+							    Data}, Receiver, Tag}).
 
 %% Sets new Acls in a Node. Old ones are lost.
 %% ACL like above.
 %% Reply = Parameters with Data like at get
 set_acl(ConnectionPId, Path, Acls) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {set_acl, path_correcter(Path),
-							    Acls}})).
+     
+		  gen_server:call(ConnectionPId, {command, {set_acl, Path,
+							    Acls}}).
 n_set_acl(ConnectionPId, Path, Acls, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {command, {set_acl, path_correcter(Path),
-							    Acls}, Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {command, {set_acl, Path,
+							    Acls}, Receiver, Tag}).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = [ChildName] where ChildName = <<"Name">>
 ls(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {ls, path_correcter(Path)}})).
+     
+		  gen_server:call(ConnectionPId, {command, {ls, Path}}).
 n_ls(ConnectionPId, Path, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {nbcommand, {ls, path_correcter(Path)},
-						  Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {nbcommand, {ls, Path},
+						  Receiver, Tag}).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls(ConnectionPId, Path, WatchOwner, WatchMessage) ->
     ?LOG(3,"Connection: Send lsw"),
-    if_path_ok_do(Path,
+     
 		  gen_server:call(ConnectionPId, {watchcommand, {ls, lsw,  
-								 path_correcter(Path),
+								 Path,
 								 {child, WatchOwner,
-								  WatchMessage}}})).
+								  WatchMessage}}}).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = {[ChildName],Parameters} with Parameters and ChildName like above.
 ls2(ConnectionPId, Path) ->
-    if_path_ok_do(Path,
-		  gen_server:call(ConnectionPId, {command, {ls2, path_correcter(Path)}})).
+     
+		  gen_server:call(ConnectionPId, {command, {ls2, Path}}).
 n_ls2(ConnectionPId, Path, Receiver, Tag) ->
-    if_path_ok_do(Path,
-		  gen_server:cast(ConnectionPId, {command, {ls2, path_correcter(Path)},
-						  Receiver, Tag})).
+     
+		  gen_server:cast(ConnectionPId, {command, {ls2, Path},
+						  Receiver, Tag}).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls2(ConnectionPId, Path, WatchOwner, WatchMessage) ->
-    if_path_ok_do(Path,
+     
 		  gen_server:call(ConnectionPId, {watchcommand, {ls2, ls2w,
-								 path_correcter(Path)
+								 Path
 								 ,{child, WatchOwner,
-								   WatchMessage}}})).
+								   WatchMessage}}}).
 
 %% Returns the Actual Transaction Id of the Client.
 %% Reply = Iteration = Int.
@@ -220,11 +220,8 @@ info_get_iterations(ConnectionPId) ->
 %% A Macro which deletes a Node and all his Childs.
 %% a) List children of Node. If he has none everything is all right.
 %% b) If he has some: kill them and their Children rekursively.
-%% c) Kill the Node with delete
+%% c) Kill the Node with delete    
 macro_delete_all_childs(ConnectionPId, Path) ->
-    if_path_ok_do(Path, macro_delete_all_childs_inner(ConnectionPId, path_correcter(Path))).
-    
-macro_delete_all_childs_inner(ConnectionPId, Path) ->
     ?LOG(3, "Delete All: Trying to Erase ~s",[Path]),
     Childs = ls(ConnectionPId, Path),
     case Childs of
@@ -254,8 +251,6 @@ macro_delete_all_childs_inner(ConnectionPId, Path) ->
 %% Gets a path and looks if the corresponding node exists. If
 %% not it is created (along with the whole path).
 macro_ensure_path(ConnectionPId, Path) ->
-    if_path_ok_do(Path, macro_ensure_path_inner(ConnectionPId, path_correcter(Path))).
-macro_ensure_path_inner(ConnectionPId, Path) ->
     FolderList = string:tokens(Path, "/"),
     PrefixPaths = get_prefix_paths(FolderList),
     lists:map(fun(Folder) -> ensure_folder(ConnectionPId, Folder) end, PrefixPaths),
@@ -281,23 +276,5 @@ ensure_folder(ConnectionPId, PrefixPath) ->
 	    create(ConnectionPId, PrefixPath, "Created by ensure_path macro")
     end.
 
-
-if_path_ok_do([47 | _Path], ToDo) ->
-    ToDo;
-if_path_ok_do(_IncorrectPath, _ToDo) ->
-    {error, "Path should start with /"}.
-
-path_correcter(PathToTest) ->
-    case length(PathToTest) of
-	1 -> 
-	    PathToTest;
-	Length ->
-	    case lists:last(PathToTest) of
-		47 ->
-		    path_correcter(lists:sublist(PathToTest, Length-1));
-		_Else -> 
-		    PathToTest
-	    end
-    end.
 	   
     

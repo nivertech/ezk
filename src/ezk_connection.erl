@@ -163,9 +163,9 @@ handle_cast({nbcommand, Args, Receiver, Tag}, State) ->
 %% parses the first part of the message and determines of which type it is and then does
 %% the corresponding (see below).
 handle_info({tcp, _Port, Info}, State) ->
-    ?LOG(3, "Connection: Got a message from Server"), 
+    ?LOG(4, "Connection: Got a message from Server"), 
     TypedMessage = ezk_packet_2_message:get_message_typ(Info), 
-    ?LOG(3, "Connection: Typedmessage is ~w",[TypedMessage]),     
+    ?LOG(4, "Connection: Typedmessage is ~w",[TypedMessage]),     
     handle_typed_incomming_message(TypedMessage, State);
 %% Its time to let the Heart bump one more time
 handle_info(heartbeat, State) ->
@@ -275,9 +275,9 @@ handle_typed_incomming_message({watchevent, Payload}, State) ->
     {Typ, Path, SyncCon} = ezk_packet_2_message:get_watch_data(Payload), 
     Watchtable = State#cstate.watchtable,
     ?LOG(3,"Connection: Got the data of the watchevent: ~w",[{Typ, Path, SyncCon}]),
-    Receiver = ets:lookup(Watchtable, {Typ, Path}),
-    ?LOG(3,"Connection: Receivers are: ~w",[Receiver]),
-    ok = send_watch_events_and_erase_receivers(Watchtable, Receiver, Path,
+    Receivers = get_receivers(Typ, Path, Watchtable),
+    ?LOG(3,"Connection: Receivers are: ~w",[Receivers]),
+    ok = send_watch_events_and_erase_receivers(Watchtable, Receivers, Path,
 					       Typ, SyncCon),
     ?LOG(3,"Connection: the first element in WT ~w",[ets:first(Watchtable)]), 
     ?LOG(3,"Connection: Receivers notified"),
@@ -326,5 +326,9 @@ handle_typed_incomming_message({authreply, Errorcode}, State) ->
     NewState = State#cstate{open_requests = NewDict, outstanding_auths = 0},
     {noreply, NewState}.
 
-
-
+get_receivers(node_deleted, Path, Watchtable) ->
+    ReceiverChildWatches = ets:lookup(Watchtable, {child, Path}),
+    ReceiverDataWatches  = ets:lookup(Watchtable, {data, Path}),
+    _Receivers = ReceiverChildWatches ++ ReceiverDataWatches;
+get_receivers(Typ, Path, Watchtable) ->
+    _Receivers = ets:lookup(Watchtable, {Typ, Path}).

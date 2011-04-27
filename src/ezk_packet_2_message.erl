@@ -54,10 +54,12 @@ get_watch_data(Binary) ->
      <<TypInt:32, SyncConnected:32, PackedPath/binary>> = Binary,
      {Path, _Nothing} = unpack(PackedPath),
      case TypInt of
-        3 ->
-           Typ = data;
-        4 -> 
-           Typ = child
+	 2 -> 
+	     Typ = node_deleted;
+	 3 ->
+	     Typ = data;
+	 4 -> 
+	     Typ = child
      end,   
      {Typ, binary_to_list(Path), SyncConnected}.
 

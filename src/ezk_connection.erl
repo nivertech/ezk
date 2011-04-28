@@ -74,7 +74,7 @@ init([Servers, TryTimes]) ->
     K.
 
 n_init_trys(_Servers, 0) ->
-    error;
+    {error, noserverreached};
 n_init_trys(Servers, N) ->
     ?LOG(1,"Connect init : incomming args: ~w",[Servers]),
     WhichServer = random:uniform(length(Servers)),

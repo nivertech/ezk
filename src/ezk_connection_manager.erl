@@ -51,6 +51,7 @@ start_link(Args) ->
 
 %% Makes the first State, which stores the default servers. 
 init(DefaultServers) ->	
+    process_flag(trap_exit, true),
     {ok, #con_man_state{defaultserverlist = DefaultServers,
 			connections       = [],
 			monitorings       = []

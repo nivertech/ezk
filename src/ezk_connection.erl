@@ -68,6 +68,7 @@ start_link(Name, Args) ->
 %% returns {ok, State} or {error, ErrorMessage} or {unknown, Message, ErrorCode}
 init([Servers, TryTimes]) ->
     random:seed(erlang:now()),
+    process_flag(trap_exit, true),
     K = n_init_trys(Servers, TryTimes),
     ?LOG(1, "Connection established"), 
     K.
@@ -217,9 +218,11 @@ send_watch_events_and_erase_receivers(Table, Receivers, Path, Typ, SyncCon) ->
             ?LOG(1, "Connection: Receiver List completely processed"),
 	    ok;
 	[{Key, WatchOwner, WatchMessage}|T] ->
+	    true = ets:delete(Table, Key),
             ?LOG(1, "Connection: Send something to ~w", [WatchOwner]),
-            WatchOwner ! {WatchMessage, {Path, Typ, SyncCon}},
-	    ets:delete(Table, Key),
+	    Message = {WatchMessage, {Path, Typ, SyncCon}},
+            ?LOG(3, "Connection: The Message is  ~w", [Message]),
+            WatchOwner ! Message,
 	    send_watch_events_and_erase_receivers(Table, T, Path, Typ, SyncCon)
     end.  
 

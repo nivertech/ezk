@@ -130,7 +130,7 @@ handle_call({watchcommand, {Command, CommandW, Path, {WType, WO, WM}}}, From, St
 %% Handles orders to die by dying
 handle_call({die, Reason}, _From, State) ->
     ?LOG(3," Connection: exiting myself"),
-    {stop, Reason, ok, State};
+    {stop, {shutdown, Reason}, ok, State};
 %% Handles auth requests
 handle_call({addauth, Scheme, Auth}, From, State) ->
     OutstandingAuths = State#cstate.outstanding_auths,

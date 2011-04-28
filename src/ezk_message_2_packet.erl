@@ -57,12 +57,12 @@ make_packet({delete, Path, _Typ}, Iteration ) ->
     wrap_packet({Command, Path, Load}, Iteration);
 %% get
 make_packet({get, Path}, Iteration) ->
-    Load = <<(pack_it_l2b(Path))/binary, 0>>,
+    Load = <<(pack_it_l2b(Path))/binary, 0:8>>,
     Command = 4,
     wrap_packet({Command, Path, Load}, Iteration );
 %% getw (the last Bit in the load is 1 if there should be a watch)
 make_packet({getw, Path}, Iteration) ->
-    Load = <<(pack_it_l2b(Path))/binary, 1>>,
+    Load = <<(pack_it_l2b(Path))/binary, 1:8>>,
     Command = 4,
     wrap_packet({Command, Path, Load}, Iteration );
 %% set

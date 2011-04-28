@@ -27,14 +27,14 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--define(RUN_ROUNDS,25).
--define(DATALENGTH, 8).
--define(PAR_RUNS, 900).
--define(MULTIRUN_RUNS, 350).
+-define(RUN_ROUNDS,20).
+-define(DATALENGTH, 4).
+-define(PAR_RUNS, 500).
+-define(MULTIRUN_RUNS, 150).
 
 
 suite() ->
-    [{timetrap,{seconds,350}}].
+    [{timetrap,{seconds,450}}].
 
 init_per_suite(Config) ->
     application:start(ezk),
@@ -127,22 +127,95 @@ run_test(_Number, Cycles, ConPId) ->
     List2 = change_data(ConPId, List,[]),
     io:format("test data again  ~w with ~w cycles",[self(), Cycles]),
     ok    = test_data(ConPId, List2),    
-    io:format("set watch ~w with ~w cycles",[self(), Cycles]),
+
+%% ------------ datawatches
+    io:format("set datawatch ~w with ~w cycles",[self(), Cycles]),
     ok    = set_watch_and_test( ConPId, List2),
     io:format("spawn changer ~w with ~w cycles",[self(), Cycles]),
     spawn(fun() -> change_data(ConPId, List2, []) end),
     io:format("wait for watch ~w with ~w cycles",[self(), Cycles]),
-    ok    = wait_watches(List2),
-    io:format("delete all nodes  ~w with ~w cycles",[self(), Cycles]),
-    ok    = sequenzed_delete(ConPId, List2),
-    io:format("finished ~w with ~w cycles",[self(), Cycles]).
+    ok    = wait_datawatches(List2),
+
+%% ------------ childwatches
+    io:format("set childwatches ~w with ~w cycles",[self(), Cycles]),
+    ok    = set_childwatches( ConPId, List2),
+    io:format("spawn childchanger ~w with ~w cycles",[self(), Cycles]),
+    spawn(fun() -> change_childs(ConPId, List2) end),
+    io:format("wait for childwatches ~w with ~w cycles",[self(), Cycles]),
+    ok    = wait_childwatches(List2),
+
+%% ----------- child and datawatches if nodes deleted
+    io:format("alternating watches ~w with ~w cycles",[self(), Cycles]),
+    ok    = set_alternating_datachildwatches( ConPId, 0, List2),
+    io:format("spawn childkiller ~w with ~w cycles",[self(), Cycles]),
+    spawn(fun() -> delete_list(ConPId, List2) end),
+    io:format("wait for alternating watches ~w with ~w cycles",[self(), Cycles]),
+    ok    = wait_nodedeleted_watches(List2),
     
-wait_watches([]) ->
+    io:format("finished ~w with ~w cycles",[self(), Cycles]).
+
+set_alternating_datachildwatches(_ConPId, _Number, []) ->  
     ok;
-wait_watches([{Path, _Data} | Tail]) ->
+set_alternating_datachildwatches(ConPId, 1, [{Path, _Data} | Tail]) -> 
+    Self = self(),
+    io:format("try to set ls watch for ~w on ~s",[Self,Path]),
+    {ok, _Childs} = ezk:ls(ConPId, Path, Self, {mixedwatch, Path}),
+    io:format("ls watch set for ~w on ~s",[Self,Path]),
+    set_alternating_datachildwatches(ConPId, 0, Tail);
+set_alternating_datachildwatches(ConPId, 0, [{Path, _Data} | Tail]) -> 
+    Self = self(),
+    io:format("try to set get watch for ~w on ~s",[Self,Path]),
+    {ok, _Data1} = ezk:get(ConPId, Path, Self, {mixedwatch, Path}),
+    io:format("get watch set for ~w on ~s",[Self,Path]),
+    set_alternating_datachildwatches(ConPId, 1, Tail).
+
+delete_list(_ConPId, []) ->
+    ok;
+delete_list(ConPId, [{Path, _Data} | Tail]) ->
+    io:format("deleting node ~w and ~w left",[Path, length(Tail)]),
+    {ok, Path} = ezk:delete(ConPId, Path),
+    delete_list(ConPId, Tail).
+
+wait_nodedeleted_watches([]) ->
+    ok;
+wait_nodedeleted_watches([{Path, _Data} | Tail]) ->
+    Self = self(),
+    io:format("~w waiting for a watch",[Self]),
+    receive
+       {{mixedwatch, Path}, _Left} ->
+    	    io:format("Got a nodedeleted, ~w left",[length(Tail)]),
+       	    wait_nodedeleted_watches(Tail)
+    end.    
+
+change_childs(_ConPId, []) ->
+    ok;
+change_childs(ConPId, [{Path, _Data} | Tail]) ->
+    {ok, ChildName} = ezk:create(ConPId, Path ++ "/testchild", "data"),
+    {ok, ChildName} = ezk:delete(ConPId, ChildName),
+    change_childs(ConPId, Tail).
+
+wait_childwatches([]) ->
+    ok;
+wait_childwatches([{Path, _Data} | Tail]) ->
+    receive
+       {{childwatch, Path}, _Left} ->
+	    wait_childwatches(Tail)
+    end.
+
+set_childwatches(_ConPId, []) ->
+    ok;
+set_childwatches(ConPId, [{Path, _Data} | Tail]) ->
+    Self = self(),
+    {ok, _Childs} = ezk:ls(ConPId, Path, Self, {childwatch, Path}),
+    set_childwatches(ConPId, Tail).
+
+
+wait_datawatches([]) ->
+    ok;
+wait_datawatches([{Path, _Data} | Tail]) ->
     receive
        {{datawatch, Path}, _Left} ->
-	    wait_watches(Tail)
+	    wait_datawatches(Tail)
     end.
     
 sequenzed_delete(_ConPId, []) ->

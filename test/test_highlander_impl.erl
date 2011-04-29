@@ -24,7 +24,7 @@
 
 -module(test_highlander_impl).
 
--export([start_link/3, init/2, terminate/2]).
+-export([start_link/3, init/2, terminate/2, motto/1, no_quickening/2]).
 
 -behaviour(ezk_highlander).
 
@@ -32,9 +32,9 @@ start_link(ConnectionPId, ButlerPId, Number) ->
     io:format("Try to start number ~w",[Number]),
     Numbers = lists:seq(1,Number),
     Paths = lists:map(fun(Num) -> ("/highlander/test/node" ++ [Num+48]) end, Numbers),
-    %% io:format("Spawn with Paths ~s",[Paths]),
+    io:format("Spawn with Paths ~s",[Paths]),
     Ergo = ezk_highlander:start(ConnectionPId, test_highlander_impl, [ButlerPId], Paths),
-    %% io:format("Result of spawning is ~w",[Ergo]),
+     io:format("Result of spawning is ~w",[Ergo]),
     Ergo.
 
 init(_Path, [ButlerPId]) ->
@@ -60,5 +60,12 @@ loop() ->
     end.
 
 terminate(State, _Reason) ->
+    io:format("Terminating test impl"),
     LoopPId = State,
     LoopPId ! die.
+
+motto(Path) ->
+    {"owned by " ++ (pid_to_list(self())), nothing}.
+
+no_quickening(Path, Motto) ->
+    ok.

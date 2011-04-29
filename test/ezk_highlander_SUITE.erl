@@ -102,7 +102,7 @@ high_wait(Dict, I) ->
 	    io:format("Doing ~w rounds with Node ~w", [Cycles, PId]),
 	    ok      = send_receive_n(PId, Cycles),
 	    io:format("Killing Father ~w", [FatherPId]),
-	    ezk_highlander:failover(FatherPId, "test"),
+	    ok = ezk_highlander:failover(FatherPId, "test"),
 	    io:format("Finished with highlaner number ~w~n",[PId]),
 	    high_wait(NewDict,I-1)
     end.
@@ -138,7 +138,7 @@ high2_wait(Dict, Left, FreeSlots) ->
 		    error_logger:error_msg("To many Highlanders")
 	    end;
 	{ended, FatherPId, Path} ->
-	    io:format("Finished with highlaner on path ~s and now ~w Slots left~n",
+	    io:format("Finished with highlander on path ~s and now ~w Slots left~n",
 		      [Path, FreeSlots+1]),
 	    ezk_highlander:failover(FatherPId, "test"),
 	    high2_wait(Dict, Left, FreeSlots+1)

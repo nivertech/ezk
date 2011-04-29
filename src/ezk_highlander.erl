@@ -46,7 +46,7 @@
 
 
 behaviour_info(callbacks) ->
-    [{terminate,2}, {init,2}].
+    [{terminate,2}, {init,2}, {motto,1}, {no_quickening,2}].
 
 %% The startfunction.
 start(ConnectionPId, Module, Parameters, NodeList) ->
@@ -56,33 +56,36 @@ start_link(ConnectionPId, Module, Parameters, NodeList) ->
     gen_server:start_link(?MODULE, [ConnectionPId, Module, Parameters, NodeList], []).
 
 
-%% The init function tryes every given path once and ensures that all
+%% The init function trys every given path once and ensures that all
 %% needed ZK Nodes are there. After trying once without success it goes 
 %% into normal genserver state and waits for messages ( = changes in the important nodes)
 %% Return type is a record of type high_state, which is the State format in this Server.
 init([ConnectionPId, Module, Parameters, NodeList]) ->
+    process_flag(trap_exit, true),    
     %% ensure the needed Paths
     ?LOG(1,"Highlander: Init: got parameters module, Para, NodeList: ~w, ~w, ~w",
 	 [Module, Parameters, NodeList]), 
     lists:map(fun(Path) ->
 		      Father = get_father(Path),
-		      ?LOG(1,"Highlander: erstelle Pfad ~s",[Father]),
-		      ezk:ensure_path(ConnectionPId, Father) 
+		      ?LOG(1,"Highlander: ensuring Path ~s",[Father]),
+		      ezk:ensure_path(ConnectionPId, Father) ,
+		      ?LOG(1,"Highlander: Path ensured: ~s",[Father])
 	      end, NodeList),
     %% set initial state
-    Ident = pid_to_list(self())++ " " ++ atom_to_list(node()),
-    State = #high_state{ident = Ident, my_path = "", module = Module, 
+    State = #high_state{ident = false, my_path = "", module = Module, 
 			parameters = Parameters,  module_state = false,
-		       connection_pid = ConnectionPId},
+		        connection_pid = ConnectionPId},
     %% first try to get highlander at every node
-    case try_first(ConnectionPId, NodeList, Ident) of
+    ?LOG(1,"Highlander: Start a first try on all paths"),
+    case try_first(Module, ConnectionPId, NodeList) of
 	no_luck ->
+	    ?LOG(1, "Highlander: No luck in first round"),
 	    {ok, State};
 	{ok, Path} ->
-	    ?LOG(1, "Highlander:  Init: ~w trying to start its child", [Ident]),
+	    ?LOG(1, "Highlander:  Init: ~w trying to start its child", [self()]),
 	    {ok, NewState} = start_init(Module, Parameters, 
 					State#high_state{my_path = Path}),
-	    ?LOG(1, "Highlander:  Init: ~w Child started", [Ident]),
+	    ?LOG(1, "Highlander:  Init: ~w Child started", [self()]),
 	    {ok, NewState#high_state{is_active = true}}
     end.
 
@@ -102,19 +105,20 @@ terminate(Reason, State) ->
     Module = State#high_state.module,
     Module:terminate(State#high_state.module_state, Reason),
     %% if terminate already deleted the node it must not be deleted again.
-    Ident = State#high_state.ident,
     ConnectionPId = State#high_state.connection_pid,
-    case ezk:get(ConnectionPId, State#high_state.my_path) of
-	{ok,{Ident, _I}} ->
-	    ezk:delete(ConnectionPId, State#high_state.my_path);
+    Path  = State#high_state.my_path, 
+    {Motto, _MottoState} = Module:motto(Path),
+    case ezk:get(ConnectionPId, Path) of
+	{ok, {Motto, _I}} ->
+	    ezk:delete(ConnectionPId, Path);
 	_Else -> 
-	    ok
+	    Motto = Module:motto(Path)	    
     end,
     timer:sleep(2000).
 
 %% Called by the failover function
 handle_call({failover, Reason}, _From, State) ->    
-    {stop, Reason, ok, State};
+    {stop,  {shutdown, Reason}, ok, State};
 %% Called by the is_active function.
 handle_call(isactive, _From, State) ->
     {reply, State#high_state.is_active, State}.
@@ -131,17 +135,18 @@ handle_info({{nodechanged, Path}, _I}, #high_state{is_active=false} = State) ->
     ?LOG(1," Highlander: nodechangenotify: ~w got one for ~s",[self(), Path]),
     %% if not active we try to get. 
     ConnectionPId = State#high_state.connection_pid,
-    case try_to_get(ConnectionPId, Path, State#high_state.ident) of
+    Module = State#high_state.module,
+    case try_to_get(Module, ConnectionPId, Path) of
 	%% If successful we can modify the State and trigger the init
 	{ok, Path} ->
 	    ?LOG(1,"~w was lucky in retry", [self()]),
-	    Module = State#high_state.module,
 	    Parameters = State#high_state.parameters,
 	    {ok, NewState} = start_init(Module, Parameters, 
 					State#high_state{my_path = Path}),
 	    {noreply, NewState#high_state{is_active = true}};
 	%% If we do not win the race we go back to start.
 	{error, _I1} ->
+	    did_not_get_highlander(Module, ConnectionPId, Path),
 	    ?LOG(1,"~w was not lucky in retry", [self()]),
 	    {noreply, State}
     end.
@@ -159,31 +164,45 @@ start_init(Module, Parameters, State) ->
     ?LOG(1, "Highlander : start_child: Function called."),
     Path   = State#high_state.my_path,
     ?LOG(1, "Highlander : start_child: Starting Child function run"),
-    {ok, HandlerState} = Module:init(Path, Parameters),
+    {ok, ModuleState} = Module:init(Path, Parameters),
     ?LOG(1, "Highlander : start_child: run is running"),
-    {ok, State#high_state{module_state = HandlerState}}.
+    {ok, State#high_state{module_state = ModuleState}}.
 
 %% Makes a first try to get highlander on every path from the list.
 %% After this every fathernode  has a childwatch.
-try_first(_ConnectionPId, [], Ident) ->
-    ?LOG(1, "Highlander: First Try: ~s tried all without luck",[Ident]),
+try_first(_Module, _ConnectionPId, []) ->
+    ?LOG(1, "Highlander: First Try: ~w tried all without luck",[self()]),
     no_luck;
-try_first(ConnectionPId, [Node | NodeList] , Ident) ->
-    case (try_to_get(ConnectionPId, Node, Ident)) of
+try_first(Module, ConnectionPId, [Node | NodeList]) ->
+    case (try_to_get(Module, ConnectionPId, Node)) of
 	{ok, Path} ->
-	    ?LOG(1, "Highlander: First Try: ~s got lucky",[Ident]),
+	    ?LOG(1, "Highlander: First Try: ~w got lucky",[self()]),
 	    {ok, Path};
 	{error, _I}  ->
-	    try_first(ConnectionPId, NodeList, Ident)
+	    did_not_get_highlander(Module, ConnectionPId, Node),
+	    try_first(Module, ConnectionPId, NodeList)
     end.  
+
+
+did_not_get_highlander(Module, ConnectionPId, Path) ->
+    case ezk:get(ConnectionPId, Path) of
+	{ok, {WinnersMotto, _Stuff}} ->
+	    Module:no_quickening(Path, WinnersMotto);
+	_Else ->
+	    ok
+    end.
+    
 
 %% Trys to create a the in Path specified node with data Ident.
 %% Also sets a childwatch to its father with message {nodechanged, Path}.
-try_to_get(ConnectionPId, Path, Ident) ->
+try_to_get(Module, ConnectionPId, Path) ->
+    ?LOG(1, "Highlander: Getting the Motto from Module ~s for Path ~s",[Module, Path ]),    
+    {Motto, _State} = Module:motto(Path),
     Father = get_father(Path),
+    ?LOG(1, "Highlander: Setting watch to Father: ~w. Motto is ~s",[Father, Motto]),
     ezk:ls(ConnectionPId, Father, self(), {nodechanged, Path}),
     ?LOG(1, "Highlander: Watch set by ~w",[self()]),
-    ezk:create(ConnectionPId, Path, Ident, e).
+    ezk:create(ConnectionPId, Path, Motto, e).
 
 %% gets the father's address by looking at the child's
 get_father(Path) ->

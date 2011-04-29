@@ -90,17 +90,17 @@ replymessage_2_reply(CommId, Path, PayloadWithErrorCode) ->
 	    Reply = {ok, Replydata},
 	    ?LOG(1, "The Reply is ~w",[Reply]);
 	<<255,255,255,142,_Payload/binary>> ->
-	    Reply = {error, "Invalid ACL"};
+	    Reply = {error, inval_acl};
 	<<255,255,255,146,_Payload/binary>> ->
-	    Reply = {error, "Directory already exists!"};
+	    Reply = {error, dir_exists};
 	<<255,255,255,154,_Payload/binary>> ->
-	    Reply = {error, "NoAuth to do this!"};   
+	    Reply = {error, no_rights};   
 	<<255,255,255,155,_Payload/binary>> ->
-	    Reply = {error, "Directory not found!"};   
+	    Reply = {error, no_dir};   
 	<<255,255,255,248,_Payload/binary>> ->
-	    Reply = {error, "Node has childs left or action is forbidden by acls!"};   
+	    Reply = {error, childs_or_forbidden};   
 	Cody -> 
-	    Reply = {unknown, "Wow, you just found an unexpected Error.", Cody}
+	    Reply = {unknown, Cody}
     end,      
     Reply.
 
@@ -221,4 +221,3 @@ get_perm_from_tupel({0,0,0,0,1}) ->
     [a | get_perm_from_tupel({0,0,0,0,0})];
 get_perm_from_tupel({0,0,0,0,0}) ->
     [].
-    

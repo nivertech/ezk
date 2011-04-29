@@ -103,7 +103,7 @@ failover(PId, Reason) ->
 terminate(Reason, State) ->
     ?LOG(1, "Highlander: Failover  of ~w",[self()]),
     Module = State#high_state.module,
-    Module:terminate(State#high_state.module_state, Reason),
+    spawn(fun() -> Module:terminate(State#high_state.module_state, Reason) end),
     %% if terminate already deleted the node it must not be deleted again.
     ConnectionPId = State#high_state.connection_pid,
     Path  = State#high_state.my_path, 

@@ -193,17 +193,15 @@ handle_info({tcp_closed, _Port}, State) ->
 %% All Outstanding requests are answered with {error, client_broke, CommId, Path}
 terminate(_Reason, State) ->
     Watchtable = State#cstate.watchtable,
-    AllWatches = ets:match(Watchtable, '$1'),
-    lists:map(fun({Data, WO, WM}) -> 
-		      WO ! {watchlost, WM, Data} 
-	      end, AllWatches),
-
+    ets:foldl(fun({Data, WO, WM}, _Acc0) ->
+		      WO ! {watchlost, WM, Data},
+		      ok
+	      end, ok, Watchtable),
     OpenRequests = State#cstate.open_requests,
-    Keys = dict:fetch_keys(OpenRequests),
-    lists:map(fun(Key) -> 
-		      {CommId, Path, From}  = dict:fetch(Key, OpenRequests),
-		      From ! {error, client_broke, CommId, Path}
-	      end, Keys),
+    dict:map(fun(_Key, {CommId, Path, From}) ->
+		     From ! {error, client_broke, CommId, Path},
+		     ok
+	     end, OpenRequests),
     ?LOG(1,"Connection: TERMINATING"),
     ok.
 

@@ -25,6 +25,19 @@
 -export([get_message_typ/1, replymessage_2_reply/3, get_watch_data/1]).
 -include_lib("../include/ezk.hrl").
 
+-record(getdata, {czxid,
+		  mzxid,
+		  pzxid,
+		  ctime,
+		  mtime,
+		  dataversion,
+		  datalength,
+		  number_children,
+		  cversion,
+		  aclversion,
+		  ephe_owner}).
+		  
+
 %% First stage of Message Passing.
 %% The first part of the Message determines the type (heartbeat, watchevent, reply) and
 %% the first part of the Header (which is necessary to find the right entry in 
@@ -165,12 +178,13 @@ getbinary_2_list(Binary) ->
       DaVer:32,          CVer:32,         AclVer:32,    EpheOwner:64,  
                          DaLe:32,         NumChi:32,    Pzxid:64>> = Binary,
     ?LOG(3,"p2m: Matching Parameterdata Successfull"),
-    [{czxid, Czxid}, {mzxid, Mzxid},
-     {ctime, Ctime}, {mtime, Mtime},
-     {dataversion, DaVer}, {datalength, DaLe},
-     {number_children,NumChi}, {pzxid, Pzxid},
-     {cversion, CVer}, {aclversion, AclVer},
-     {ephe_owner, EpheOwner}].
+    #getdata{czxid          = Czxid,   mzxid     = Mzxid,
+	     ctime          = Ctime,   mtime     = Mtime,
+	     dataversion    = DaVer,   datalength= DaLe,
+	     number_children= NumChi,  pzxid     = Pzxid,
+	     cversion       = CVer,    aclversion= AclVer,
+	     ephe_owner     = EpheOwner}.
+
 %% uses the first 4 Byte of a binary to determine the lengths of the data and then 
 %% returns a pair {Data, Leftover}
 unpack(Binary) ->

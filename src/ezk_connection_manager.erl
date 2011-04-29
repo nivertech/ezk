@@ -50,7 +50,8 @@ start_link(Args) ->
     gen_server:start_link({local,?SERVER}, ?MODULE, Args, []).
 
 %% Makes the first State, which stores the default servers. 
-init(DefaultServers) ->	
+init(_Args) ->
+    {ok, DefaultServers} = application:get_env(default_servers),
     process_flag(trap_exit, true),
     {ok, #con_man_state{defaultserverlist = DefaultServers,
 			connections       = [],

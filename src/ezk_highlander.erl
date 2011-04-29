@@ -107,7 +107,7 @@ terminate(Reason, State) ->
     %% if terminate already deleted the node it must not be deleted again.
     ConnectionPId = State#high_state.connection_pid,
     Path  = State#high_state.my_path, 
-    {Motto, _MottoState} = Module:motto(Path),
+    Motto = Module:motto(Path),
     case ezk:get(ConnectionPId, Path) of
 	{ok, {Motto, _I}} ->
 	    ezk:delete(ConnectionPId, Path);
@@ -197,7 +197,7 @@ did_not_get_highlander(Module, ConnectionPId, Path) ->
 %% Also sets a childwatch to its father with message {nodechanged, Path}.
 try_to_get(Module, ConnectionPId, Path) ->
     ?LOG(1, "Highlander: Getting the Motto from Module ~s for Path ~s",[Module, Path ]),    
-    {Motto, _State} = Module:motto(Path),
+    Motto = Module:motto(Path),
     Father = get_father(Path),
     ?LOG(1, "Highlander: Setting watch to Father: ~w. Motto is ~s",[Father, Motto]),
     ezk:ls(ConnectionPId, Father, self(), {nodechanged, Path}),

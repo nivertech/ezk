@@ -1,5 +1,5 @@
 ZK_VERSION=3.3.2
-ZK_URL=http://apache.linux-mirror.org//hadoop/zookeeper/zookeeper-3.3.2/zookeeper-${ZK_VERSION}.tar.gz
+ZK_URL=http://hudson/job/zookeeper-mirror/1/artifact/zookeeper-3.3.2.tar.gz
 ZK_ARCHIVE=zookeeper-${ZK_VERSION}.tar.gz
 ZK_DIR=zookeeper-${ZK_VERSION}
 

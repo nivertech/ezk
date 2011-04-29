@@ -91,3 +91,27 @@ instances of the highlander (on different machines would be
 the normal usecase) and the highlander makes sure there is at 
 most one instance per path running and if one fails it is 
 directly replaced by another instance.
+
+Callbacks:
+- init/2
+  Gets the Path the highlander got highlander in and the Arguments 
+  which were given to the start_link function when starting 
+  the highlander.
+  Should start all necessary processes and then return an
+  intern state which is later given to the terminate function  
+- terminate/2
+  Called when the highlanders time is running out.
+  Gets the intern state and the Reason of termination
+- motto/1  
+  This function is called evereytime the highlanderwannabe 
+  trys to get highlander in a path. 
+  Gets the path the highlander trys to get highlander in. Should
+  return the data the highlander stores in his node. This is 
+  the motto which is read by the no_quickening.
+- no_quickening/2
+  This function is called every time the highlanderwannabe tryed
+  to get a highlander but failed. It gets the path the wannabe 
+  wanted to get highlander in and the motto of the one who is the
+  actual highlander in this part. The returnvalue is ignored.
+
+

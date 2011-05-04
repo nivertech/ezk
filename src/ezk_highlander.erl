@@ -149,7 +149,10 @@ handle_info({{nodechanged, Path}, _I}, #high_state{is_active=false} = State) ->
 	    did_not_get_highlander(Module, ConnectionPId, Path),
 	    ?LOG(1,"~w was not lucky in retry", [self()]),
 	    {noreply, State}
-    end.
+    end;
+handle_info({'EXIT', _Pid, _Reason}, State) ->
+    {noreply, State}.
+
 
 
 handle_cast(_A, State) ->

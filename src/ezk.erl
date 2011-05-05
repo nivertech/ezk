@@ -101,21 +101,21 @@ help() ->
 %% Returns {error, auth_failed} if server rejected auth
 %% Returns {error, unknown, ErrorCodeBin} if something new happened
 auth(ConnectionPId, Scheme, Id) ->
-   ezk_commands:addauth(ConnectionPId, Scheme, Id).
+   ezk_connection:addauth(ConnectionPId, Scheme, Id).
 
 
 %% Creates a new ZK_Node
 %% Reply = Path where Path = String
 create(ConnectionPId, Path, Data) ->
-     ezk_commands:create(ConnectionPId, Path, Data).
+     ezk_connection:create(ConnectionPId, Path, Data).
 n_create(ConnectionPId, Path, Data, Receiver, Tag) ->
-     ezk_commands:n_create(ConnectionPId, Path, Data, Receiver, Tag).
+     ezk_connection:n_create(ConnectionPId, Path, Data, Receiver, Tag).
 
 %% Typ = e | s | es (stands for etheremal, sequenzed or both)
 create(ConnectionPId, Path, Data, Typ) ->
-    ezk_commands:create(ConnectionPId, Path, Data, Typ).
+    ezk_connection:create(ConnectionPId, Path, Data, Typ).
 n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag) ->
-    ezk_commands:n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag).
+    ezk_connection:n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag).
 
 
 %% Acls = [Acl] where Acl = {Permissions, Scheme, Id} 
@@ -123,96 +123,96 @@ n_create(ConnectionPId, Path, Data, Typ, Receiver, Tag) ->
 %% and Permission = [Per] | String 
 %% where Per = r | w | c | d | a
 create(ConnectionPId, Path, Data, Typ, Acls)  ->
-   ezk_commands:create(ConnectionPId, Path, Data, Typ, Acls).
+   ezk_connection:create(ConnectionPId, Path, Data, Typ, Acls).
 n_create(ConnectionPId, Path, Data, Typ, Acls, Receiver, Tag)  ->
-   ezk_commands:n_create(ConnectionPId, Path, Data, Typ, Acls, Receiver, Tag).
+   ezk_connection:n_create(ConnectionPId, Path, Data, Typ, Acls, Receiver, Tag).
 
 ensure_path(ConnectionPId, Path) ->
-    ezk_commands:ensure_path(ConnectionPId, Path).
+    ezk_connection:ensure_path(ConnectionPId, Path).
 
 %% Deletes a ZK_Node
 %% Only working if Node has no children.
 %% Reply = Path where Path = String
 delete(ConnectionPId, Path) ->
-    ezk_commands:delete(ConnectionPId, Path).
+    ezk_connection:delete(ConnectionPId, Path).
 n_delete(ConnectionPId, Path, Receiver, Tag) ->
-    ezk_commands:n_delete(ConnectionPId, Path, Receiver, Tag).
+    ezk_connection:n_delete(ConnectionPId, Path, Receiver, Tag).
 
 %% Deletes a ZK_Node and all his childs.
 %% Reply = Path where Path = String
 delete_all(ConnectionPId, Path) ->
-   ezk_commands:delete_all(ConnectionPId, Path).    
+   ezk_connection:delete_all(ConnectionPId, Path).    
 
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
 %% and Parameters = [{ParameterName, Value}]
 %% where ParameterName = czxid | mzxid | pzxid | ctime | mtime | dataversion | 
 %%                       datalength | number_children | cversion | aclversion
 get(ConnectionPId, Path) ->
-    ezk_commands:get(ConnectionPId, Path).
+    ezk_connection:get(ConnectionPId, Path).
 n_get(ConnectionPId, Path, Receiver, Tag) ->
-    ezk_commands:n_get(ConnectionPId, Path, Receiver, Tag).
+    ezk_connection:n_get(ConnectionPId, Path, Receiver, Tag).
    
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
 %% M = {WatchMessage, {Path, Type, SyncCon}}
 %% with Type = child
 get(ConnectionPId, Path, WatchOwner, WatchMessage) ->
-    ezk_commands:get(ConnectionPId, Path, WatchOwner, WatchMessage).
+    ezk_connection:get(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Returns the actual Acls of a Node
 %% Reply = {[ACL],Parameters} with ACl and Parameters like above
 get_acl(ConnectionPId, Path) ->
-    ezk_commands:get_acl(ConnectionPId, Path).
+    ezk_connection:get_acl(ConnectionPId, Path).
 n_get_acl(ConnectionPId, Path, Receiver, Tag) ->
-    ezk_commands:n_get_acl(ConnectionPId, Path, Receiver, Tag).
+    ezk_connection:n_get_acl(ConnectionPId, Path, Receiver, Tag).
 
 %% Sets new Data in a Node. Old ones are lost.
 %% Reply = Parameters with Data like at get
 set(ConnectionPId, Path, Data) ->
-   ezk_commands:set(ConnectionPId, Path, Data).
+   ezk_connection:set(ConnectionPId, Path, Data).
 n_set(ConnectionPId, Path, Data, Receiver, Tag) ->
-   ezk_commands:n_set(ConnectionPId, Path, Data, Receiver, Tag).
+   ezk_connection:n_set(ConnectionPId, Path, Data, Receiver, Tag).
 
 %% Sets new Acls in a Node. Old ones are lost.
 %% ACL like above.
 %% Reply = Parameters with Data like at get
 set_acl(ConnectionPId, Path, Acls) ->
-    ezk_commands:set_acl(ConnectionPId, Path, Acls).
+    ezk_connection:set_acl(ConnectionPId, Path, Acls).
 n_set_acl(ConnectionPId, Path, Acls, Receiver, Tag) ->
-    ezk_commands:n_set_acl(ConnectionPId, Path, Acls, Receiver, Tag).
+    ezk_connection:n_set_acl(ConnectionPId, Path, Acls, Receiver, Tag).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = [ChildName] where ChildName = <<"Name">>
 ls(ConnectionPId, Path) ->
-   ezk_commands:ls(ConnectionPId, Path).
+   ezk_connection:ls(ConnectionPId, Path).
 n_ls(ConnectionPId, Path, Receiver, Tag) ->
-   ezk_commands:n_ls(ConnectionPId, Path, Receiver, Tag).
+   ezk_connection:n_ls(ConnectionPId, Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls(ConnectionPId, Path, WatchOwner, WatchMessage) ->
-    ezk_commands:ls(ConnectionPId, Path, WatchOwner, WatchMessage).
+    ezk_connection:ls(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Lists all Children of a Node. Paths are given as Binarys!
 %% Reply = {[ChildName],Parameters} with Parameters and ChildName like above.
 ls2(ConnectionPId, Path) ->
-   ezk_commands:ls2(ConnectionPId, Path).
+   ezk_connection:ls2(ConnectionPId, Path).
 n_ls2(ConnectionPId, Path, Receiver, Tag) ->
-   ezk_commands:n_ls2(ConnectionPId, Path, Receiver, Tag).
+   ezk_connection:n_ls2(ConnectionPId, Path, Receiver, Tag).
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls2(ConnectionPId, Path, WatchOwner, WatchMessage) ->
-    ezk_commands:n_ls2(ConnectionPId, Path, WatchOwner, WatchMessage).
+    ezk_connection:n_ls2(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Returns the Actual Transaction Id of the Client.
 %% Reply = Iteration = Int.
 info_get_iterations(ConnectionPId) ->
-    ezk_commands:info_get_iterations(ConnectionPId).
+    ezk_connection:info_get_iterations(ConnectionPId).
 
 die(ConnectionPId) ->
     ezk:die(ConnectionPId, "No offence").
 
 die(ConnectionPId, Reason) ->
-    ezk_commands:die(ConnectionPId, Reason).
+    ezk_connection:die(ConnectionPId, Reason).
     
 %% Starts a connection to a zookeeper Server
 %% Returns {ok, PID} where Pid is the PId of the gen_server 

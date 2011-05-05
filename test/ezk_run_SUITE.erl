@@ -252,6 +252,6 @@ sequenzed_create(ConPId, Path, CyclesLeft, List) ->
     {ok, Name} = ezk:create(ConPId, Path, Data, s),
     sequenzed_create(ConPId, Path, CyclesLeft-1, [{Name, Data} | List]).
 
-stringmaker(N) ->
+datamaker(N) ->
     list_to_binary(lists:seq(1,N)).
     

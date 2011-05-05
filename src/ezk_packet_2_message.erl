@@ -67,12 +67,14 @@ get_watch_data(Binary) ->
      <<TypInt:32, SyncConnected:32, PackedPath/binary>> = Binary,
      {Path, _Nothing} = unpack(PackedPath),
      case TypInt of
+	 1 -> 
+	     Typ = node_created;
 	 2 -> 
 	     Typ = node_deleted;
 	 3 ->
-	     Typ = data;
+	     Typ = data_changed;
 	 4 -> 
-	     Typ = child
+	     Typ = child_changed
      end,   
      {Typ, binary_to_list(Path), SyncConnected}.
 
@@ -114,8 +116,12 @@ interpret_reply_data(1, _Path, Reply) ->
 %%% delete --> Reply = Nothing --> use the Path
 interpret_reply_data(2, Path, _Reply) ->
     Path;
+%%% exists
+interpret_reply_data(3, _Path, Reply) ->
+    io:format("Reply exi: ~w ~n",[Reply]);
 %%% get --> Reply = The data stored in the node and then all the nodes  parameters
 interpret_reply_data(4, _Path, Reply) -> 
+    io:format("Reply get: ~w ~n",[Reply]),
     ?LOG(3,"P2M: Got a get reply"),
     <<LengthOfData:32, Data/binary>> = Reply,
     ?LOG(3,"P2M: Length of data is ~w",[LengthOfData]),

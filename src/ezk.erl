@@ -41,6 +41,7 @@
 
 -export([start_connection/0, start_connection/1, end_connection/2]).
 -export([add_monitors/2, get_connections/0]).
+-export([exists/2, exists/4]).
 
 
 help() ->
@@ -142,6 +143,11 @@ n_delete(ConnectionPId, Path, Receiver, Tag) ->
 %% Reply = Path where Path = String
 delete_all(ConnectionPId, Path) ->
    ezk_connection:delete_all(ConnectionPId, Path).    
+
+exists(ConnectionPId, Path) ->
+    ezk_connection:exists(ConnectionPId, Path).
+exists(ConnectionPId, Path, WatchOwner, WatchMessage) ->
+    ezk_connection:exists(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
 %% and Parameters = [{ParameterName, Value}]

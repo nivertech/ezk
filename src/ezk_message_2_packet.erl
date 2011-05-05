@@ -55,6 +55,16 @@ make_packet({delete, Path, _Typ}, Iteration ) ->
     Load = <<(pack_it_l2b(Path))/binary, 255, 255, 255, 255 >>,
     Command = 2,
     wrap_packet({Command, Path, Load}, Iteration);
+%exists
+make_packet({exists, Path}, Iteration) ->
+    Load = <<(pack_it_l2b(Path))/binary, 0:8 >>,
+    Command = 3,
+    wrap_packet({Command, Path, Load}, Iteration);
+make_packet({existsw, Path}, Iteration) ->
+    Load = <<(pack_it_l2b(Path))/binary, 1:8 >>,
+    Command = 3,
+    wrap_packet({Command, Path, Load}, Iteration);
+    
 %% get
 make_packet({get, Path}, Iteration) ->
     Load = <<(pack_it_l2b(Path))/binary, 0:8>>,

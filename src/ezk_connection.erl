@@ -63,6 +63,8 @@
 %infos
 -export([info_get_iterations/1]).
 
+-export([exists/2, exists/4]).
+
 -include_lib("../include/ezk.hrl").
 
 -define(SERVER, ?MODULE). 
@@ -164,13 +166,19 @@ delete_all(ConnectionPId, Path) ->
 	    {error, Message}
     end.       
 
+exists(ConnectionPId, Path) ->
+    gen_server:call(ConnectionPId, {command, {exists, Path}}).
+exists(ConnectionPId, Path, WatchOwner, WatchMessage) ->
+    gen_server:call(ConnectionPId, {watchcommand, {exists, existsw, Path, {exi, WatchOwner,
+									  WatchMessage}}}).
+
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
 %% and Parameters = {getdata, Czxid, Mzxid, Pzxid, Ctime, Mtime, Dataversion,
 %%                   Datalength, Number_children, Cversion, Aclversion, Ephe_owner}
 get(ConnectionPId, Path) ->     
-		  gen_server:call(ConnectionPId, {command, {get, Path}}).
+    gen_server:call(ConnectionPId, {command, {get, Path}}).
 n_get(ConnectionPId, Path, Receiver, Tag) ->     
-		  gen_server:cast(ConnectionPId, {command, {get, Path}, Receiver, Tag}).
+    gen_server:cast(ConnectionPId, {command, {get, Path}, Receiver, Tag}).
 %% Like the one above but sets a datawatch to Path.
 %% If watch is triggered a Message M is send to the PId WatchOwner
 %% M = {WatchMessage, {Path, Type, SyncCon}
@@ -531,9 +539,18 @@ handle_typed_incomming_message({authreply, Errorcode}, State) ->
     NewState = State#cstate{open_requests = NewDict, outstanding_auths = 0},
     {noreply, NewState}.
 
-get_receivers(node_deleted, Path, Watchtable) ->
-    ReceiverChildWatches = ets:lookup(Watchtable, {child, Path}),
-    ReceiverDataWatches  = ets:lookup(Watchtable, {data, Path}),
-    _Receivers = ReceiverChildWatches ++ ReceiverDataWatches;
-get_receivers(Typ, Path, Watchtable) ->
-    _Receivers = ets:lookup(Watchtable, {Typ, Path}).
+get_receivers(node_deleted,   Path, Watchtable) ->
+    ChildWatches = ets:lookup(Watchtable, {child, Path}),
+    DataWatches  = ets:lookup(Watchtable, {data, Path}),
+    ExiWatches   = ets:lookup(Watchtable, {exi, Path}),
+    _Receivers   = ChildWatches ++ DataWatches ++ ExiWatches;
+get_receivers(data_changed,   Path, Watchtable) ->
+    DataWatches  = ets:lookup(Watchtable, {data, Path}),
+    ExiWatches   = ets:lookup(Watchtable, {exi, Path}),
+    _Receivers   = DataWatches ++ ExiWatches;
+get_receivers(node_created,   Path, Watchtable) ->
+    ExiWatches   = ets:lookup(Watchtable, {exi, Path}),
+    _Receivers   = ExiWatches;
+get_receivers(child_changed,  Path, Watchtable) ->
+    ChildWatches = ets:lookup(Watchtable, {child, Path}),
+    _Receivers   = ChildWatches.

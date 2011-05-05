@@ -55,8 +55,9 @@ info_tests(Config) ->
     
 
 acl_test(Config) ->    
-    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config),   
-    {ok, Node} = ezk:create(ConPId, "/test", "data", es, 
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config), 
+    Data = list_to_binary("data"),
+    {ok, Node} = ezk:create(ConPId, "/test", Data, es, 
 			    [
 			     {[a], "world", "anyone"}, {[w,r], "world", "anyone"}
 			    ]),

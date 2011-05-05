@@ -53,9 +53,10 @@ epheremal_monitoring(_Config) ->
     Kid4 = spawn(fun() -> timer:sleep(100000) end),
     io:format("main : Kids spawned"),
     timer:sleep(3000),
+    DataC = list_to_binary("datac"),
     {ok, _I0} = ezk:get(Con0, "/kid1"),
     {ok, _I1} = ezk:get(Con0, "/kid2"),
-    {ok, _I3} = ezk:create(Con3, "/kid3", "datac", e),
+    {ok, _I3} = ezk:create(Con3, "/kid3", DataC, e),
     ezk:add_monitors(Con3, [Kid3, Kid4]),
     timer:sleep(3000),
     exit(Kid4, "test"),
@@ -82,7 +83,8 @@ epheremal_monitoring(_Config) ->
 
 makewait(Con, Time, Node) ->
     io:format("makewait: create node"),
-    ezk:create(Con, Node, "data", e),
+    Data = list_to_binary("data"),
+    ezk:create(Con, Node, Data, e),
     io:format("makewait: waiting"),
     timer:sleep(Time),
     io:format("makewait: ending"),
@@ -90,7 +92,8 @@ makewait(Con, Time, Node) ->
 
 makemonwaitdie(Con, Time, Node, Father) ->
     io:format("makemonwaitdie: create node"),
-    ezk:create(Con, Node, "datb", e),
+    DataB = list_to_binary("datab"),
+    ezk:create(Con, Node, DataB, e),
     io:format("makemonwaitdie: add monitor"),
     ezk:add_monitors(Con, [self()]),
     io:format("makemonwaitdie: waiting"),

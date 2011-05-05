@@ -65,7 +65,8 @@ terminate(State, _Reason) ->
     LoopPId ! die.
 
 motto(Path) ->
-    "owned by " ++ (pid_to_list(self())).
+    Motto = "owned by " ++ (pid_to_list(self())),
+    list_to_binary(Motto).
 
 no_quickening(Path, Motto) ->
     ok.

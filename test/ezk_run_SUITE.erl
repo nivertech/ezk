@@ -190,7 +190,8 @@ wait_nodedeleted_watches([{Path, _Data} | Tail]) ->
 change_childs(_ConPId, []) ->
     ok;
 change_childs(ConPId, [{Path, _Data} | Tail]) ->
-    {ok, ChildName} = ezk:create(ConPId, Path ++ "/testchild", "data"),
+    NewData = datamaker(?DATALENGTH),
+    {ok, ChildName} = ezk:create(ConPId, Path ++ "/testchild", NewData),
     {ok, ChildName} = ezk:delete(ConPId, ChildName),
     change_childs(ConPId, Tail).
 
@@ -234,7 +235,7 @@ set_watch_and_test(ConPId, [{Path,Data} | Tail]) ->
 change_data(_ConPId, [], NewList) ->
     NewList;
 change_data(ConPId, [{Path, _Data} | Tail], NewList) ->
-    NewData = stringmaker(?DATALENGTH),
+    NewData = datamaker(?DATALENGTH),
     {ok, _I} = ezk:set(ConPId, Path, NewData),
     change_data(ConPId, Tail, [{Path, NewData} | NewList]).
 
@@ -247,10 +248,10 @@ test_data(ConPId, [{Path, Data} | Tail]) ->
 sequenzed_create(_ConPId, _Path, 0, List) ->
     List;
 sequenzed_create(ConPId, Path, CyclesLeft, List) ->
-    Data = stringmaker(?DATALENGTH),
+    Data = datamaker(?DATALENGTH),
     {ok, Name} = ezk:create(ConPId, Path, Data, s),
     sequenzed_create(ConPId, Path, CyclesLeft-1, [{Name, Data} | List]).
 
 stringmaker(N) ->
-    lists:seq(1,N).
+    list_to_binary(lists:seq(1,N)).
     

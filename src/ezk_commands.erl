@@ -119,9 +119,8 @@ delete_all(ConnectionPId, Path) ->
 		  macro_delete_all_childs(ConnectionPId, Path).    
 
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
-%% and Parameters = [{ParameterName, Value}]
-%% where ParameterName = czxid | mzxid | pzxid | ctime | mtime | dataversion | 
-%%                       datalength | number_children | cversion | aclversion
+%% and Parameters = {getdata, Czxid, Mzxid, Pzxid, Ctime, Mtime, Dataversion,
+%%                   Datalength, Number_children, Cversion, Aclversion, Ephe_owner}
 get(ConnectionPId, Path) ->
      
 		  gen_server:call(ConnectionPId, {command, {get, Path}}).
@@ -152,6 +151,7 @@ n_get_acl(ConnectionPId, Path, Receiver, Tag) ->
 						  Receiver, Tag}).
 
 %% Sets new Data in a Node. Old ones are lost.
+%% Dataformat is Binary.
 %% Reply = Parameters with Data like at get
 set(ConnectionPId, Path, Data) ->
      
@@ -273,7 +273,8 @@ ensure_folder(ConnectionPId, PrefixPath) ->
 	{ok, _I} ->
 	    ok;
 	{error, _I} ->
-	    create(ConnectionPId, PrefixPath, "Created by ensure_path macro")
+	    create(ConnectionPId, PrefixPath, 
+		   list_to_binary("Created by ensure_path macro"))
     end.
 
 	   

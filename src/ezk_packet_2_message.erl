@@ -121,8 +121,9 @@ interpret_reply_data(4, _Path, Reply) ->
     ?LOG(3,"P2M: Length of data is ~w",[LengthOfData]),
     {ReplyData, Left} = split_binary(Data, LengthOfData),
     ?LOG(3,"P2M: The Parameterdata is ~w",[Left]),    
+    ?LOG(3,"P2M: Data is ~w",[ReplyData]),    
     Parameter = getbinary_2_list(Left),
-    {binary_to_list(ReplyData), Parameter};
+    {ReplyData, Parameter};
 %%% set --> Reply = the nodes parameters
 interpret_reply_data(5, _Path, Reply) -> 
     getbinary_2_list(Reply);	       

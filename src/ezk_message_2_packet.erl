@@ -45,7 +45,7 @@ make_packet({create, Path, Data, Typ, Acls}, Iteration) ->
     %% gets a binary representation of the acls
     AclBin = acls_2_bin(Acls, <<>>, 0),
     Load = <<(pack_it_l2b(Path))/binary, 
-	     (pack_it_l2b(Data))/binary, 
+	     (pack_it_b2b(Data))/binary, 
 	     AclBin/binary,
 	     Mode:32>>,
     Command = 1,
@@ -68,7 +68,7 @@ make_packet({getw, Path}, Iteration) ->
 %% set
 make_packet({set, Path, Data}, Iteration) ->
     Load = <<(pack_it_l2b(Path))/binary, 
-	     (pack_it_l2b(Data))/binary,
+	     (pack_it_b2b(Data))/binary,
 	     255, 255, 255, 255>>,
     Command = 5,
     wrap_packet({Command, Path, Load}, Iteration );
@@ -127,6 +127,10 @@ make_addauth_packet({add_auth, Scheme, Auth}) ->
 pack_it_l2b(List) ->
     Length = iolist_size(List),
     <<Length:32,(iolist_to_binary(List))/binary>>.
+
+pack_it_b2b(Bin) ->
+    Length = size(Bin),
+    <<Length:32, Bin/binary>>.
 
 %% Gets the command id, the path, the load and the actual iteration and forms a
 %% zookeeper packet from all of them but the path. Instead the Path is passed on

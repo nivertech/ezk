@@ -54,7 +54,7 @@ existsw_test(Config) ->
     set_exist_watches(ConPId, Pathlist),
     spawn(fun() ->
 		  create_nodes(ConPId, Pathlist) end),
-    waitexistwatches(Pathlist),
+    waitexistwatches(ConPId, Pathlist),
     ok.
 
 set_exist_watches(_ConPId, []) ->
@@ -70,14 +70,14 @@ create_nodes(ConPId, [Path | Pathlist]) ->
     ezk:create(ConPId, Path, list_to_binary("test")),
     create_nodes(ConPId, Pathlist).
     
-waitexistwatches([]) ->
+waitexistwatches(_ConPId, []) ->
     ok;
-waitexistwatches([Path | Pathlist]) ->
+waitexistwatches(ConPId, [Path | Pathlist]) ->
     receive
 	{{existwatch, Path}, _Something} ->
 	    {ok, _getInformations} = ezk:exists(ConPId, Path),
 	    {ok, _Path} = ezk:delete(ConPId, Path),
-	    waitexistwatches(Pathlist)
+	    waitexistwatches(ConPId, Pathlist)
     end.
 
 info_tests(Config) ->

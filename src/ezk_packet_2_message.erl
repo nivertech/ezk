@@ -118,10 +118,9 @@ interpret_reply_data(2, Path, _Reply) ->
     Path;
 %%% exists
 interpret_reply_data(3, _Path, Reply) ->
-    io:format("Reply exi: ~w ~n",[Reply]);
+    getbinary_2_list(Reply);
 %%% get --> Reply = The data stored in the node and then all the nodes  parameters
 interpret_reply_data(4, _Path, Reply) -> 
-    io:format("Reply get: ~w ~n",[Reply]),
     ?LOG(3,"P2M: Got a get reply"),
     <<LengthOfData:32, Data/binary>> = Reply,
     ?LOG(3,"P2M: Length of data is ~w",[LengthOfData]),

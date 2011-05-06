@@ -19,6 +19,7 @@ init_per_suite(Config) ->
     application:start(ezk),
     application:start(sasl),
     {ok, ConnectionPId} = ezk:start_connection(),
+    ezk:delete_all(ConnectionPId, "/"),
     [{connection_pid, ConnectionPId}  | Config].
 
 end_per_suite(Config) ->
@@ -45,7 +46,39 @@ groups() ->
 
 all() -> 
     %% {skip, test}.
-    [info_tests, acl_test].
+    [existsw_test, info_tests, acl_test].
+
+existsw_test(Config) ->
+    {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config), 
+    Pathlist = ["/test1", "/test2", "/test3", "/test4", "/test5", "/test6", "/test7"],  
+    set_exist_watches(ConPId, Pathlist),
+    spawn(fun() ->
+		  create_nodes(ConPId, Pathlist) end),
+    waitexistwatches(Pathlist),
+    ok.
+
+set_exist_watches(_ConPId, []) ->
+    ok;
+set_exist_watches(ConPId, [Path | Pathlist]) ->
+    Self = self(),
+    {error, _errorAtom} = ezk:exists(ConPId, Path, Self, {existwatch, Path}),
+    set_exist_watches(ConPId, Pathlist).
+
+create_nodes(_ConPId, []) ->
+    ok;
+create_nodes(ConPId, [Path | Pathlist]) ->
+    ezk:create(ConPId, Path, list_to_binary("test")),
+    create_nodes(ConPId, Pathlist).
+    
+waitexistwatches([]) ->
+    ok;
+waitexistwatches([Path | Pathlist]) ->
+    receive
+	{{existwatch, Path}, _Something} ->
+	    {ok, _getInformations} = ezk:exists(ConPId, Path),
+	    {ok, _Path} = ezk:delete(ConPId, Path),
+	    waitexistwatches(Pathlist)
+    end.
 
 info_tests(Config) ->
     {connection_pid, ConPId} = lists:keyfind(connection_pid, 1, Config), 

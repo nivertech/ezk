@@ -151,23 +151,31 @@ run_test(_Number, Cycles, ConPId) ->
     spawn(fun() -> delete_list(ConPId, List2) end),
     io:format("wait for alternating watches ~w with ~w cycles",[self(), Cycles]),
     ok    = wait_nodedeleted_watches(List2),
+
+%% ---------
     
     io:format("finished ~w with ~w cycles",[self(), Cycles]).
 
 set_alternating_datachildwatches(_ConPId, _Number, []) ->  
     ok;
-set_alternating_datachildwatches(ConPId, 1, [{Path, _Data} | Tail]) -> 
+set_alternating_datachildwatches(ConPId, 0, [{Path, _Data} | Tail]) -> 
     Self = self(),
     io:format("try to set ls watch for ~w on ~s",[Self,Path]),
     {ok, _Childs} = ezk:ls(ConPId, Path, Self, {mixedwatch, Path}),
     io:format("ls watch set for ~w on ~s",[Self,Path]),
-    set_alternating_datachildwatches(ConPId, 0, Tail);
-set_alternating_datachildwatches(ConPId, 0, [{Path, _Data} | Tail]) -> 
+    set_alternating_datachildwatches(ConPId, 1, Tail);
+set_alternating_datachildwatches(ConPId, 1, [{Path, _Data} | Tail]) -> 
     Self = self(),
     io:format("try to set get watch for ~w on ~s",[Self,Path]),
     {ok, _Data1} = ezk:get(ConPId, Path, Self, {mixedwatch, Path}),
     io:format("get watch set for ~w on ~s",[Self,Path]),
-    set_alternating_datachildwatches(ConPId, 1, Tail).
+    set_alternating_datachildwatches(ConPId, 2, Tail);
+set_alternating_datachildwatches(ConPId, 2, [{Path, _Data} | Tail]) -> 
+    Self = self(),
+    io:format("try to set exist watch for ~w on ~s",[Self,Path]),
+    {ok, _Data1} = ezk:exists(ConPId, Path, Self, {mixedwatch, Path}),
+    io:format("exists watch set for ~w on ~s",[Self,Path]),
+    set_alternating_datachildwatches(ConPId, 0, Tail).
 
 delete_list(_ConPId, []) ->
     ok;

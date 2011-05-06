@@ -53,6 +53,8 @@ help() ->
     io:format("| ezk:create/5     : ConPId,  Path, Data, Typ, [Acl]         |~n"),
     io:format("| ezk:delete/2     : ConPId,  Path                           |~n"),
     io:format("| ezk:delete_all/2 : ConPId,  Path                           |~n"),
+    io:format("| ezk:exists/2     : ConPId,  Path                           |~n"),
+    io:format("| ezk:exists/4     : ConPId,  Path, WatchOwner, Watchmessage |~n"),
     io:format("| ezk:get/2        : ConPId,  Path                           |~n"),
     io:format("| ezk:get/4        : ConPId,  Path, WatchOwner, Watchmessage |~n"),
     io:format("| ezk:get_acl/2    : ConPId,  Path                           |~n"),
@@ -144,15 +146,20 @@ n_delete(ConnectionPId, Path, Receiver, Tag) ->
 delete_all(ConnectionPId, Path) ->
    ezk_connection:delete_all(ConnectionPId, Path).    
 
+%% Looks if a Node exists
+%% Reply = Parameters like in get (see one function below)
+%% Can set a watch to the path
+%% which is triggered 
+%% a) when path is erased if path existed.
+%% b) when path is created if path did not exist.
 exists(ConnectionPId, Path) ->
     ezk_connection:exists(ConnectionPId, Path).
 exists(ConnectionPId, Path, WatchOwner, WatchMessage) ->
     ezk_connection:exists(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Reply = {Data, Parameters} where Data = The Data stored in the Node
-%% and Parameters = [{ParameterName, Value}]
-%% where ParameterName = czxid | mzxid | pzxid | ctime | mtime | dataversion | 
-%%                       datalength | number_children | cversion | aclversion
+%% and Parameters = {getdata, Czxid, Mzxid, Pzxid, Ctime, Mtime, Dataversion,
+%%                   Datalength, Number_children, Cversion, Aclversion, Ephe_owner}
 get(ConnectionPId, Path) ->
     ezk_connection:get(ConnectionPId, Path).
 n_get(ConnectionPId, Path, Receiver, Tag) ->

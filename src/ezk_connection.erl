@@ -166,6 +166,12 @@ delete_all(ConnectionPId, Path) ->
 	    {error, Message}
     end.       
 
+%% Looks if a Node exists
+%% Reply = Parameters like in get (see one function below)
+%% Can set a watch to the path
+%% which is triggered 
+%% a) when path is erased if path existed.
+%% b) when path is created if path did not exist.
 exists(ConnectionPId, Path) ->
     gen_server:call(ConnectionPId, {command, {exists, Path}}).
 exists(ConnectionPId, Path, WatchOwner, WatchMessage) ->

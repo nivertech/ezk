@@ -43,6 +43,63 @@
 -export([add_monitors/2, get_connections/0]).
 -export([exists/2, exists/4]).
 
+-type ezk_err()          :: inval_acl | dir_exists | no_rights | no_dir | 
+			    childs_or_forbidden.
+-type ezk_path()         :: string().
+-type ezk_conpid()       :: pid().
+-type ezk_data()         :: binary().
+-type ezk_ctype()        :: e | es | s | se.
+-type ezk_acl_perms()    :: [ezk_acl_perm()].
+-type ezk_acl_perm()     :: r | w | c | d | a.
+-type ezk_acl_scheme()   :: string().
+-type ezk_acl_id()       :: string().
+-type ezk_acls()         :: {ezk_acl_perm(), ezk_acl_scheme(), ezk_acl_id()}.
+-type ezk_getdata()      :: {}. 
+-type ezk_watchowner()   :: pid().
+-type ezk_watchmessage() :: term().
+
+-spec create/3 :: (ezk_conpid(), ezk_path(), ezk_data()) ->
+			  {ok, ezk_path()} | {error, ezk_err}.
+-spec create/4 :: (ezk_conpid(), ezk_path(), ezk_data(), ezk_ctype()) ->
+			  {ok, ezk_path()} | {error, ezk_err}.
+-spec create/5 :: (ezk_conpid(), ezk_path(), ezk_data(), ezk_ctype(), ezk_acl()) ->
+			  {ok, ezk_path()} | {error, ezk_err}.
+-spec ensure_path/2 :: (ezk_conpid(), ezk_path()) ->
+			       {ok, ezk_path()} | {error, ezk_err}.
+-spec delete/2 :: (ezk_conpid(), ezk_path()) ->
+			  {ok, ezk_path()) | {error, ezk_err}.
+-spec delete_all/2 ::  (ezk_conpid(), ezk_path()) ->
+			       {ok, ezk_path()) | {error, ezk_err}.
+-spec exists/2 :: (ezk_conpid(), ezk_path()) ->
+			  {ok, ezk_getdata()} | {error, ezk_err}.
+-spec exists/4 :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
+			  {ok, ezk_getdata()} | {error, ezk_err}.
+-spec ls/2     :: (ezk_conpid(), ezk_path()) ->
+			  {ok, [ezk_path()]} | {error, ezk_err}.
+-spec ls/4     :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
+			  {ok, [ezk_path()]} | {error, ezk_err}.
+-spec ls2/2    :: (ezk_conpid(), ezk_path()) ->
+			  {ok, [{children, [ezk_path()]},{getdata, ezk_getdata()}]} |
+			  {error, ezk_err}.
+-spec ls2/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
+			  {ok, [{children, [ezk_path()]},{getdata, ezk_getdata()}]} |
+			  {error, ezk_err}.
+-spec get/2    :: (ezk_conpid(), ezk_path()) ->
+			  {ok, {ezk_data(), ezk_getdata()}} | {error, ezk_err}.
+-spec get/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
+			  {ok, {ezk_data(), ezk_getdata()}} | {error, ezk_err}.
+-spec set/3    :: (ezk_conpid(), ezk_path(), ezk_data()) ->
+			  {ok, ezk_getdata()} | {error, ezk_err}.
+-spec set/5    :: (ezk_conpid(), ezk_path(), ezk_data(), ezk_watchowner(),
+		   ezk_watchmessage()) ->
+			  {ok, ezk_getdata()} | {error, ezk_err()}.
+-spec start_connection/0 :: ->
+					      {ok, conpid()}| {error, no_server_reached}.
+-spec start_connection/1 :: ezk_server() ->
+					      {ok, conpid()}| {error, no_server_reached}.
+
+			  
+			     
 
 help() ->
     io:format("--------------------------------------------------------------~n"),

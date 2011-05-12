@@ -17,6 +17,9 @@ ci: clean conf_local compile test
 
 ## compile test release
 
+dialyze: compile
+	dialyzer ebin/*.beam --build_plt
+
 common_move:
 	mkdir -p ct_log
 	mv ct_run* ct_log/

@@ -23,6 +23,7 @@
 %% -------------------------------------------------------------------
 
 -module(ezk).
+-include_lib("../include/ezk.hrl").
 
 %functions creating and deleting zkNodes
 -export([  create/3,   create/4,   create/5,   delete/2]).
@@ -53,13 +54,14 @@
 -type ezk_acl_perm()     :: r | w | c | d | a.
 -type ezk_acl_scheme()   :: string().
 -type ezk_acl_id()       :: string().
--type ezk_acl()         :: {ezk_acl_perms(), ezk_acl_scheme(), ezk_acl_id()}.
+-type ezk_acl()          :: {ezk_acl_perms(), ezk_acl_scheme(), ezk_acl_id()}.
 -type ezk_acls()         :: [ezk_acl()].
--type ezk_getdata()      :: {}. 
+-type ezk_getdata()      :: {}.
 -type ezk_watchowner()   :: pid().
 -type ezk_watchmessage() :: term().
 -type ezk_ls2data()      :: {children, [ezk_path()]} | {getdata, ezk_getdata()}.
 -type ezk_server()       :: {}.
+-type ezk_monitor()      :: pid().
 
 -spec create/3 :: (ezk_conpid(), ezk_path(), ezk_data()) ->
 			  {ok, ezk_path()} | {error, ezk_err()}.
@@ -83,18 +85,27 @@
 			  {ok, [ezk_path()]} | {error, ezk_err()}.
 -spec ls2/2    :: (ezk_conpid(), ezk_path()) ->
 			  {ok, [ezk_ls2data()]} | {error, ezk_err()}.
--spec ls2/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
-			  {ok, [ezk_ls2data()]} | {error, ezk_err()}.
+%% -spec ls2/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
+%% 			  {ok, [ezk_ls2data()]} | {error, ezk_err()}.
 -spec get/2    :: (ezk_conpid(), ezk_path()) ->
 			  {ok, {ezk_data(), ezk_getdata()}} | {error, ezk_err()}.
 -spec get/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
 			  {ok, {ezk_data(), ezk_getdata()}} | {error, ezk_err()}.
 -spec set/3    :: (ezk_conpid(), ezk_path(), ezk_data()) ->
 			  {ok, ezk_getdata()} | {error, ezk_err()}.
+-spec set_acl/3:: (ezk_conpid(), ezk_path(), ezk_acls()) ->
+			  {ok, ezk_getdata()}.
+-spec get_acl/2:: (ezk_conpid, ezk_path()) ->
+			  {ok, {ezk_acls(), ezk_getdata()}}.
+
 -spec start_connection/0 :: () -> {ok, ezk_conpid()} | {error, no_server_reached}.
 -spec start_connection/1 :: (ezk_server()) ->
-					      {ok, ezk_conpid()}| {error, no_server_reached}.
-
+					      {ok, ezk_conpid()} |
+				    {error, no_server_reached}.
+-spec end_connection/2   :: (ezk_conpid(), string()) -> ok | {error, no_connection}.
+-spec add_monitors/2     :: (ezk_conpid(), [pid()])  -> ok.
+-spec get_connections/0   :: () -> [{ezk_conpid(), [ezk_monitor()]}].
+				    
 			  
 			     
 
@@ -118,8 +129,6 @@ help() ->
     io:format("| ezk:ls/4         : ConPId,  Path, WatchOwner, Watchmessage |~n"),
     io:format("| ezk:ls2/2        : ConPId,  Path                           |~n"),
     io:format("| ezk:ls2/4        : ConPId,  Path, WatchOwner, Watchmessage |~n"),
-    io:format("| ezk:die/1        : ConPId                                  |~n"),
-    io:format("| ezk:die/2        : ConPId,  Reason                         |~n"),
     io:format("| ezk:info_get_iterations/1  : ConPId                        |~n"),
     io:format("| ezk:start_connection/0                                     |~n"),
     io:format("| ezk:start_connection/1     : Servers                       |~n"),
@@ -274,12 +283,6 @@ ls2(ConnectionPId, Path, WatchOwner, WatchMessage) ->
 %% Reply = Iteration = Int.
 info_get_iterations(ConnectionPId) ->
     ezk_connection:info_get_iterations(ConnectionPId).
-
-die(ConnectionPId) ->
-    ezk:die(ConnectionPId, "No offence").
-
-die(ConnectionPId, Reason) ->
-    ezk_connection:die(ConnectionPId, Reason).
     
 %% Starts a connection to a zookeeper Server
 %% Returns {ok, PID} where Pid is the PId of the gen_server 
@@ -306,3 +309,9 @@ add_monitors(ConnectionPId, Monitors) ->
 %% Returns [Connection] where Connection = {PId, [MonitorPId]} 
 get_connections() ->
     ezk_connection_manager:get_connections().
+
+die(ConnectionPId) ->
+    ezk:die(ConnectionPId, "No offence").
+
+die(ConnectionPId, Reason) ->
+    ezk_connection:die(ConnectionPId, Reason).

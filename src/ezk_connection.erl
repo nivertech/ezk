@@ -28,12 +28,12 @@
 -behaviour(gen_server).
 
 -record(cstate, {open_requests = dict:new(), 
-		 socket :: port(), 
+		 socket, 
 		 ip, 
-		 port :: 0..65535, 
+		 port, 
 		 timeout, 
 		 sessionid, 
-		 iteration :: pos_integer(),
+		 iteration,
 		 outstanding_heartbeats = 0,
 		 outstanding_auths = 0,
 		 watchtable,
@@ -281,7 +281,7 @@ ensure_folder(ConnectionPId, PrefixPath) ->
 %%-------------------------------------------------------------------------------
 %%-------------------------------------------------------------------------------
 
-%% inits the random function and chooeses a Server from the list.
+%% inits the random function and chooses a Server from the list.
 %% then establishes a connection to that server.
 %% returns {ok, State} or {error, ErrorMessage} or {unknown, Message, ErrorCode}
 init([Servers, TryTimes]) ->

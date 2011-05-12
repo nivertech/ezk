@@ -62,6 +62,8 @@
 -type ezk_ls2data()      :: {children, [ezk_path()]} | {getdata, ezk_getdata()}.
 -type ezk_server()       :: {}.
 -type ezk_monitor()      :: pid().
+-type ezk_authreply()    :: {ok, authed} | {error, auth_failed} | 
+			    {error, unknown, binary()} | {error,  auth_in_progress}.
 
 -spec create/3 :: (ezk_conpid(), ezk_path(), ezk_data()) ->
 			  {ok, ezk_path()} | {error, ezk_err()}.
@@ -85,8 +87,8 @@
 			  {ok, [ezk_path()]} | {error, ezk_err()}.
 -spec ls2/2    :: (ezk_conpid(), ezk_path()) ->
 			  {ok, [ezk_ls2data()]} | {error, ezk_err()}.
-%% -spec ls2/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
-%% 			  {ok, [ezk_ls2data()]} | {error, ezk_err()}.
+-spec ls2/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
+			  {ok, [ezk_ls2data()]} | {error, ezk_err()}.
 -spec get/2    :: (ezk_conpid(), ezk_path()) ->
 			  {ok, {ezk_data(), ezk_getdata()}} | {error, ezk_err()}.
 -spec get/4    :: (ezk_conpid(), ezk_path(), ezk_watchowner(), ezk_watchmessage()) ->
@@ -104,7 +106,10 @@
 				    {error, no_server_reached}.
 -spec end_connection/2   :: (ezk_conpid(), string()) -> ok | {error, no_connection}.
 -spec add_monitors/2     :: (ezk_conpid(), [pid()])  -> ok.
--spec get_connections/0   :: () -> [{ezk_conpid(), [ezk_monitor()]}].
+-spec get_connections/0     :: () -> [{ezk_conpid(), [ezk_monitor()]}].
+-spec info_get_iterations/1 :: (ezk_conpid()) -> integer().
+-spec auth/3                :: (ezk_conpid(), ezk_acl_scheme(), ezk_acl_id()) ->
+				       ezk_authreply().
 				    
 			  
 			     
@@ -132,8 +137,8 @@ help() ->
     io:format("| ezk:info_get_iterations/1  : ConPId                        |~n"),
     io:format("| ezk:start_connection/0                                     |~n"),
     io:format("| ezk:start_connection/1     : Servers                       |~n"),
-    io:format("| ezk:end_connection/1       : ConPId, Reason                |~n"),
-    io:format("| ezk:addMonitors/2          : ConPId,                       |~n"),
+    io:format("| ezk:end_connection/2       : ConPId, Reason                |~n"),
+    io:format("| ezk:addMonitors/2          : ConPId, MonitorPIds           |~n"),
     io:format("| ezk:getConnections/0                                       |~n"),
     io:format("|------------------------------------------------------------|~n"),
     io:format("| In Progress:                                               |~n"),

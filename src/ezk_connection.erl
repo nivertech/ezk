@@ -401,10 +401,10 @@ handle_info(heartbeat, State) ->
 	    {noreply, NewState};
 	%% Last bump got no reply. Thats bad.
         _Else ->
-	    ezk:die("Heartattack")
+	    {stop, {shutdown, heartattack}, ok, State}
     end;
 handle_info({tcp_closed, _Port}, State) ->
-    {stop, tcp_closed, State}.
+    {stop, {shutdown, heartattacktcp_closed}, ok, State}.
 
 %% if server dies all owners who are waiting for watchevents get a Message
 %% M = {watchlost, WatchMessage, Data}.

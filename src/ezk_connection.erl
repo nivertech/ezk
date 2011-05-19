@@ -410,6 +410,14 @@ handle_info({tcp_closed, _Port}, State) ->
 %% M = {watchlost, WatchMessage, Data}.
 %% All Outstanding requests are answered with {error, client_broke, CommId, Path}
 terminate(_Reason, State) ->
+    Iteration   = State#cstate.iteration,
+    QuitMessage = ezk_message_2_packet:make_quit_message(Iteration),
+    Socket      = State#cstate.socket,
+    gen_tcp:send(Socket, QuitMessage),
+    receive
+	{tcp, Socket, Reply} ->
+	    <<_Iteration:32, _PZxid:64, 0:32>> = Reply
+    end,
     Watchtable = State#cstate.watchtable,
     ets:foldl(fun({Data, WO, WM}, _Acc0) ->
 		      WO ! {watchlost, WM, Data},

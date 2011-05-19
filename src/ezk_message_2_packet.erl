@@ -24,7 +24,7 @@
 %% -------------------------------------------------------------------
 -module(ezk_message_2_packet).
 -include_lib("../include/ezk.hrl").
--export([make_packet/2, make_addauth_packet/1]).
+-export([make_packet/2, make_addauth_packet/1, make_quit_message/1]).
 -export([get_permi_int/2]).
 
 %% This function gets a command and the associated data plus the actual Iteration
@@ -127,6 +127,11 @@ make_addauth_packet({add_auth, Scheme, Auth}) ->
 	       (pack_it_l2b(Scheme))/binary,
 	       (pack_it_l2b(Auth))/binary>>,
     {ok, Packet}.
+
+make_quit_message(Iteration) ->
+    _QuitMessage  = <<Iteration:32, 255, 255, 255, 245>>.
+    
+    
 	       
 
 %--------------------------------------------------------------------

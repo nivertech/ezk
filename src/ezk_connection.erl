@@ -417,6 +417,9 @@ terminate(_Reason, State) ->
     receive
 	{tcp, Socket, Reply} ->
 	    <<_Iteration:32, _PZxid:64, 0:32>> = Reply
+    after
+	4 ->
+	    ok
     end,
     Watchtable = State#cstate.watchtable,
     ets:foldl(fun({Data, WO, WM}, _Acc0) ->

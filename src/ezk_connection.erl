@@ -414,13 +414,7 @@ terminate(_Reason, State) ->
     QuitMessage = ezk_message_2_packet:make_quit_message(Iteration),
     Socket      = State#cstate.socket,
     gen_tcp:send(Socket, QuitMessage),
-    receive
-	{tcp, Socket, Reply} ->
-	    <<_Iteration:32, _PZxid:64, 0:32>> = Reply
-    after
-	4 ->
-	    ok
-    end,
+    waitterminateok(Socket),
     Watchtable = State#cstate.watchtable,
     ets:foldl(fun({Data, WO, WM}, _Acc0) ->
 		      WO ! {watchlost, WM, Data},
@@ -433,6 +427,17 @@ terminate(_Reason, State) ->
 	     end, OpenRequests),
     ?LOG(1,"Connection: TERMINATING"),
     ok.
+
+waitterminateok(Socket) ->
+    receive
+	{tcp, Socket, <<_Iteration:32, _PZxid:64, 0:32>>} ->
+	    ok;
+	{tcp, Socket, _Something} ->
+	    waitterminateok(Socket)							  
+    after
+	4 ->
+	    ok
+    end.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.

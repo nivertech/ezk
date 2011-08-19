@@ -28,6 +28,7 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 -define(LOG, ct_log:log).
 -define(LOGSUITEINIT, ct_log:suite_init).
@@ -73,12 +74,16 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 groups() ->    
-    [].
+    [
+     {wait_for_hl,  [parallel], [wait_for_highlander, start_stop_highlander]}
+    ].
 
 all() -> 
     %% {skip, test}.
-     [high_test
-      , high2_test
+     [
+      {group, wait_for_hl},
+      high_test,
+      high2_test
      ].
 
 high_test(Config) ->
@@ -154,6 +159,34 @@ receiver2(Child, Caller, Father, Path, Cycles) ->
     end,
     Caller ! {ended, Father, Path}.
     
+
+%% ---------------------------- high 2 test------------------------
+
+start_stop_highlander() ->
+    [].
+
+start_stop_highlander(Config) ->
+    timer:sleep(300),
+    CPid = ?config(connection_pid, Config),
+    {ok, HL} = ?HIGHIMPL(CPid, self(), 1),
+    timer:sleep(2000),
+    gen_server:call(HL,stop),
+
+%    HLPid = receive {init, P, _, _} -> P end,
+%    HLPid ! die,
+%    receive die -> ok end,
+    ok.
+    
+wait_for_highlander() ->    
+    [].
+
+wait_for_highlander(Config) ->
+    Nodename = "/highlander/test/node1",
+    CPid = ?config(connection_pid, Config),
+    ?assertError(timeout, ezk_highlander:wait_for(CPid, Nodename, 10)),
+    ok = ezk_highlander:wait_for(CPid, Nodename, 510).
+
+
 
 
 %% ---------------------------- free for all ---------------------------

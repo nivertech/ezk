@@ -28,6 +28,10 @@
  
 -behaviour(gen_server).
 
+
+-type zk_conn() :: pid().
+-type zk_nodename() :: string().
+
 -record(high_state, {is_active = false,
 		     ident,
 		     my_path,
@@ -38,7 +42,7 @@
 		     connection_pid
 		    }).
 
--export([start/4, start_link/4, failover/2]).
+-export([start/4, start_link/4, failover/2,wait_for/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 -export([behaviour_info/1]).
@@ -54,6 +58,31 @@ start(ConnectionPId, Module, Parameters, NodeList) ->
 
 start_link(ConnectionPId, Module, Parameters, NodeList) ->
     gen_server:start_link(?MODULE, [ConnectionPId, Module, Parameters, NodeList], []).
+
+
+%% wait for a highlander to appear. stop with error(timeout, Nodename) in case of timeout
+%% @param NodeName path to the Highlander's 
+-spec wait_for(zk_conn(), zk_nodename(), pos_integer()) ->
+		      ok.
+wait_for(ConnectionPid, Nodename, Timeout) ->
+    Timer = erlang:start_timer(Timeout, self(), timeout),
+    ok = wait_for_get(ConnectionPid, Nodename, Timer),
+    erlang:cancel_timer(Timer),
+    receive {timeout, Timer, _} -> ok after 0 -> ok end,
+    ok.
+
+wait_for_get(ConnectionPid, Nodename, Timer) ->
+    receive {timeout, Timer, _} -> 
+	    erlang:error(timeout, Nodename)
+    after 0 -> ok
+    end,
+    case ezk:get(ConnectionPid, Nodename) of
+	{ok, _} ->
+	    ok;
+	_ ->
+	    timer:sleep(50),
+	    wait_for_get(ConnectionPid, Nodename, Timer)
+    end.
 
 
 %% The init function trys every given path once and ensures that all
@@ -114,14 +143,18 @@ terminate(Reason, State) ->
 	_Else -> 
 	    Motto = Module:motto(Path)	    
     end,
-    timer:sleep(2000).
+    ok.
+%    timer:sleep(2000).
 
 %% Called by the failover function
 handle_call({failover, Reason}, _From, State) ->    
     {stop,  {shutdown, Reason}, ok, State};
 %% Called by the is_active function.
 handle_call(isactive, _From, State) ->
-    {reply, State#high_state.is_active, State}.
+    {reply, State#high_state.is_active, State};
+handle_call(stop, _From, State) ->
+    {stop, normal, ok, State}.
+
 
 %% If a watch is triggered this Message comes to the Highlander. 
 %% Path is the Path of the Node to make, not the one of the Father. 

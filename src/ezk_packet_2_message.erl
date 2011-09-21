@@ -71,7 +71,7 @@ get_watch_data(Binary) ->
 	     Typ = node_created;
 	 2 -> 
 	     Typ = node_deleted;
-	 3 ->
+	 3 -> 
 	     Typ = data_changed;
 	 4 -> 
 	     Typ = child_changed

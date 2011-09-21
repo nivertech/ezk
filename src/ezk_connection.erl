@@ -401,10 +401,10 @@ handle_info(heartbeat, State) ->
 	    {noreply, NewState};
 	%% Last bump got no reply. Thats bad.
         _Else ->
-	    {stop, {shutdown, heartattack}, ok, State}
+	    {stop, {shutdown, heartattack}, State}
     end;
 handle_info({tcp_closed, _Port}, State) ->
-    {stop, {shutdown, heartattacktcp_closed}, ok, State}.
+    {stop, {shutdown, heartattacktcp_closed}, State}.
 
 %% if server dies all owners who are waiting for watchevents get a Message
 %% M = {watchlost, WatchMessage, Data}.
@@ -416,7 +416,10 @@ terminate(_Reason, State) ->
     gen_tcp:send(Socket, QuitMessage),
     waitterminateok(Socket),
     Watchtable = State#cstate.watchtable,
+    ?LOG(1,"Connection: Sending watches"),
     ets:foldl(fun({Data, WO, WM}, _Acc0) ->
+		      ?LOG(2,"Connection: Sending watchlost to ~w: ~w", 
+			   [WO, {watchlost, WM, Data}]),
 		      WO ! {watchlost, WM, Data},
 		      ok
 	      end, ok, Watchtable),

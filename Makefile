@@ -17,6 +17,9 @@ ci: clean conf_local compile test
 
 ## compile test release
 
+erlstart:
+	erl -pa "/home/marco/ezk/ebin/"
+
 dialyze: compile
 	dialyzer ebin/*.beam --build_plt
 

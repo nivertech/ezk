@@ -282,7 +282,7 @@ n_ls2(ConnectionPId, Path, Receiver, Tag) ->
 %% like above, but a Childwatch is set to the Node. 
 %% Same Reaktion like at get with watch but Type = child
 ls2(ConnectionPId, Path, WatchOwner, WatchMessage) ->
-    ezk_connection:n_ls2(ConnectionPId, Path, WatchOwner, WatchMessage).
+    ezk_connection:ls2(ConnectionPId, Path, WatchOwner, WatchMessage).
 
 %% Returns the Actual Transaction Id of the Client.
 %% Reply = Iteration = Int.
